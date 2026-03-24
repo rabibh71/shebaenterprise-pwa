@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Truck - Sheba Enterprise</title>
+  <link rel="stylesheet" href="css/truck.css" />
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+    (function () {
+      const savedTheme = localStorage.getItem("appTheme") || "default";
+      document.documentElement.classList.remove("dark");
+      if (savedTheme === "dark") {
+        document.documentElement.classList.add("dark");
+      }
+    })();
+  </script>
+</head>
+<body>
+
+  <!-- LIST PAGE -->
+  <div class="truck-page" id="truckListPage">
+    <div class="truck-header">
+      <div class="truck-topbar">
+        <button class="truck-icon-btn" onclick="goTruckDashboard()">←</button>
+
+        <div class="truck-title-wrap">
+          <div class="truck-title">TRUCK</div>
+          <div class="truck-subtitle"><span id="truckCountText">0</span>টি ট্রাক নিবন্ধিত</div>
+        </div>
+
+        <button class="truck-icon-btn" onclick="openTruckForm()">＋</button>
+      </div>
+
+      <div class="truck-summary-row">
+        <div class="truck-mini-summary">
+          <span>ট্রাক</span>
+          <strong id="summaryTruckCount">0</strong>
+        </div>
+
+        <div class="truck-mini-summary">
+          <span>আয়</span>
+          <strong id="summaryIncome">৳0</strong>
+        </div>
+
+        <div class="truck-mini-summary">
+          <span>ব্যয়</span>
+          <strong id="summaryExpense">৳0</strong>
+        </div>
+
+        <div class="truck-mini-summary">
+          <span>লাভ/ক্ষতি</span>
+          <strong id="summaryProfit">৳0</strong>
+        </div>
+      </div>
+
+      <div class="truck-toolbar">
+        <input
+          type="text"
+          id="truckSearch"
+          class="truck-search"
+          placeholder="ট্রাক নম্বর / রুট সার্চ"
+          oninput="renderTruckList()"
+        />
+
+        <select id="truckSort" class="truck-filter" onchange="renderTruckList()">
+          <option value="latest">সর্বশেষ</option>
+          <option value="income">আয় বেশি</option>
+          <option value="expense">ব্যয় বেশি</option>
+          <option value="profit">লাভ বেশি</option>
+          <option value="number">নাম্বার</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="truck-wrap">
+      <div class="warning-card hidden" id="warningCard">
+        <div class="warning-title">Fitness / Tax Warning</div>
+        <div class="warning-list" id="warningList"></div>
+      </div>
+
+      <div id="emptyTruckState" class="empty-state-truck hidden">
+        <div class="empty-truck-icon">🚚</div>
+        <h3>কোনো ট্রাক নেই</h3>
+        <p>নতুন ট্রাক যোগ করতে + বাটনে চাপুন</p>
+        <button class="primary-truck-btn" onclick="openTruckForm()">ট্রাক যোগ করুন</button>
+      </div>
+
+      <div id="truckList" class="truck-list"></div>
+
+      <div class="truck-report-card">
+        <div class="report-title">অ্যাডভান্স রিপোর্ট</div>
+
+        <div class="report-mode-grid">
+          <select id="reportMode" class="report-filter" onchange="handleTruckReportModeChange()">
+            <option value="monthYear">নির্দিষ্ট মাস + বছর</option>
+            <option value="yearOnly">নির্দিষ্ট বছর</option>
+            <option value="singleDate">নির্দিষ্ট দিন</option>
+            <option value="dateRange">নির্দিষ্ট date range</option>
+          </select>
+        </div>
+
+        <div id="reportDynamicFields" class="report-dynamic-grid"></div>
+
+        <div class="report-label" id="reportLabel">রিপোর্ট প্রস্তুত</div>
+
+        <div class="report-grid">
+          <div class="report-box">
+            <span>মোট আয়</span>
+            <strong class="income-color" id="reportIncome">৳0</strong>
+          </div>
+
+          <div class="report-box">
+            <span>মোট ব্যয়</span>
+            <strong class="expense-color" id="reportExpense">৳0</strong>
+          </div>
+
+          <div class="report-box">
+            <span>লাভ/ক্ষতি</span>
+            <strong id="reportBalance">৳0</strong>
+          </div>
+
+          <div class="report-box">
+            <span>ট্রিপ</span>
+            <strong id="reportTrips">0</strong>
+          </div>
+        </div>
+
+        <div class="report-actions">
+          <button class="report-btn primary" onclick="applyAdvancedTruckReport()">রিপোর্ট দেখুন</button>
+          <button class="report-btn" onclick="downloadTruckPDF()">PDF Report</button>
+        </div>
+
+        <div class="chart-wrap">
+          <canvas id="truckChart" height="180"></canvas>
+        </div>
+      </div>
+
+      <div class="truck-report-card">
+        <div class="report-title">Smart Analytics</div>
+
+        <div class="report-grid">
+          <div class="report-box">
+            <span>Next Month Prediction</span>
+            <strong id="aiPredictionIncome">৳0</strong>
+          </div>
+
+          <div class="report-box">
+            <span>Best Truck</span>
+            <strong id="bestTruckNumber">-</strong>
+          </div>
+
+          <div class="report-box">
+            <span>This Month Income</span>
+            <strong id="monthlySummaryIncome">৳0</strong>
+          </div>
+
+          <div class="report-box">
+            <span>This Month Expense</span>
+            <strong id="monthlySummaryExpense">৳0</strong>
+          </div>
+        </div>
+
+        <div class="report-label" id="smartAlertText">সব সিস্টেম ঠিক আছে</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DETAIL PAGE -->
+  <div class="truck-detail-page hidden" id="truckDetailPage">
+    <div class="truck-detail-top">
+      <button class="truck-icon-btn" onclick="backToTruckList()">←</button>
+      <div class="detail-truck-number" id="detailTruckNumber">TRUCK</div>
+      <button class="truck-icon-btn" onclick="openEditCurrentTruck()">✎</button>
+    </div>
+
+    <div class="detail-summary">
+      <div class="detail-summary-card">
+        <span>আয়</span>
+        <strong class="income-color" id="detailIncome">৳0</strong>
+      </div>
+
+      <div class="detail-summary-card">
+        <span>ব্যয়</span>
+        <strong class="expense-color" id="detailExpense">৳0</strong>
+      </div>
+
+      <div class="detail-summary-card" id="detailProfitCard">
+        <span id="detailProfitLabel">লাভ</span>
+        <strong id="detailProfitValue">৳0</strong>
+      </div>
+    </div>
+
+    <div class="detail-tabs">
+      <button class="tab-btn active" id="incomeTabBtn" onclick="switchTruckDetailTab('income')">
+        আয় (<span id="incomeTabCount">0</span>)
+      </button>
+      <button class="tab-btn" id="expenseTabBtn" onclick="switchTruckDetailTab('expense')">
+        ব্যয় (<span id="expenseTabCount">0</span>)
+      </button>
+    </div>
+
+    <button class="add-entry-btn income-btn" id="addIncomeBtn" onclick="openTruckIncomeSheet()">⊕ আয় যোগ করুন</button>
+    <button class="add-entry-btn expense-btn hidden" id="addExpenseBtn" onclick="openTruckExpenseSheet()">⊕ ব্যয় যোগ করুন</button>
+
+    <div id="historyList" class="history-list"></div>
+
+    <div id="noHistoryState" class="no-history hidden">
+      <div style="font-size:64px;opacity:.45;margin-bottom:8px;">↗</div>
+      <div id="noHistoryText">কোনো আয় নেই</div>
+    </div>
+
+    <div class="truck-report-card">
+      <div class="report-title">এই ট্রাকের রিপোর্ট</div>
+
+      <div class="report-mode-grid">
+        <select id="detailReportMode" class="report-filter" onchange="handleTruckDetailReportMode()">
+          <option value="monthYear">নির্দিষ্ট মাস + বছর</option>
+          <option value="yearOnly">নির্দিষ্ট বছর</option>
+          <option value="singleDate">নির্দিষ্ট দিন</option>
+          <option value="dateRange">নির্দিষ্ট date range</option>
+        </select>
+      </div>
+
+      <div id="detailReportFields" class="report-dynamic-grid"></div>
+
+      <div class="report-label" id="detailReportLabel">এই ট্রাকের রিপোর্ট প্রস্তুত</div>
+
+      <div class="report-grid">
+        <div class="report-box">
+          <span>আয়</span>
+          <strong id="detailReportIncome" class="income-color">৳0</strong>
+        </div>
+
+        <div class="report-box">
+          <span>ব্যয়</span>
+          <strong id="detailReportExpense" class="expense-color">৳0</strong>
+        </div>
+
+        <div class="report-box">
+          <span>লাভ/ক্ষতি</span>
+          <strong id="detailReportBalance">৳0</strong>
+        </div>
+
+        <div class="report-box">
+          <span>ট্রিপ</span>
+          <strong id="detailReportTrips">0</strong>
+        </div>
+      </div>
+
+      <div class="report-actions">
+        <button class="report-btn primary" onclick="applyTruckDetailReport()">রিপোর্ট দেখুন</button>
+      </div>
+
+      <div class="chart-wrap">
+        <canvas id="detailTruckChart" height="180"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRUCK FORM SHEET -->
+  <div class="sheet-overlay" id="truckFormSheet">
+    <div class="sheet">
+      <div class="sheet-title" id="truckFormTitle">নতুন ট্রাক</div>
+
+      <div class="sheet-field">
+        <label>ট্রাক নম্বর *</label>
+        <input type="text" id="truckNumber" placeholder="ট্রাক নম্বর">
+      </div>
+
+      <div class="sheet-field">
+        <label>মডেল</label>
+        <input type="text" id="truckModel" placeholder="ট্রাকের মডেল">
+      </div>
+
+      <div class="sheet-field">
+        <label>স্ট্যাটাস</label>
+        <select id="truckStatus">
+          <option value="Running">Running</option>
+          <option value="Maintenance">Maintenance</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+      </div>
+
+      <div class="sheet-field">
+        <label>Route</label>
+        <input type="text" id="truckRoute" placeholder="যেমন: ঢাকা-চট্টগ্রাম">
+      </div>
+
+      <div class="sheet-field">
+        <label>Registration</label>
+        <input type="text" id="truckReg" placeholder="Registration">
+      </div>
+
+      <div class="sheet-field">
+        <label>Fitness Date</label>
+        <input type="date" id="truckFitness">
+      </div>
+
+      <div class="sheet-field">
+        <label>Tax Date</label>
+        <input type="date" id="truckTax">
+      </div>
+
+      <div class="sheet-field">
+        <label>ড্রাইভারের নাম</label>
+        <input type="text" id="driverName" placeholder="ড্রাইভারের নাম">
+      </div>
+
+      <div class="sheet-field">
+        <label>ড্রাইভারের মোবাইল</label>
+        <input type="text" id="driverPhone" placeholder="একাধিক হলে comma দিয়ে লিখুন">
+      </div>
+
+      <div class="sheet-field">
+        <label>হেলপারের নাম</label>
+        <input type="text" id="helperName" placeholder="হেলপারের নাম">
+      </div>
+
+      <div class="sheet-actions">
+        <button class="sheet-cancel" onclick="closeTruckForm()">বাতিল</button>
+        <button class="sheet-save save-blue" onclick="saveTruck()">সংরক্ষণ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- INCOME SHEET -->
+  <div class="sheet-overlay" id="truckIncomeSheet">
+    <div class="sheet">
+      <div class="sheet-title">আয় যোগ করুন / Edit করুন</div>
+
+      <div class="sheet-field">
+        <label>তারিখ</label>
+        <input type="date" id="incomeDate">
+      </div>
+
+      <div class="sheet-field">
+        <label>ট্রিপ সংখ্যা</label>
+        <input type="number" id="incomeTrips" placeholder="0">
+      </div>
+
+      <div class="sheet-field">
+        <label>মোট আয় (৳)</label>
+        <input type="number" id="incomeAmount" placeholder="৳ পরিমাণ">
+      </div>
+
+      <div class="sheet-field">
+        <label>পেমেন্ট মেথড</label>
+        <select id="incomePaymentMethod" onchange="toggleTruckIncomePaymentMethod()">
+          <option value="Cash">Cash</option>
+          <option value="bKash">bKash</option>
+          <option value="Nagad">Nagad</option>
+          <option value="Rocket">Rocket</option>
+          <option value="Upay">Upay</option>
+          <option value="Bank">Bank</option>
+          <option value="Card">Card</option>
+          <option value="Mixed">Mixed</option>
+        </select>
+      </div>
+
+      <div id="incomeMixedSplitWrap" class="mixed-split-wrap hidden">
+        <div class="split-title">Mixed Split</div>
+
+        <div class="split-grid">
+          <div class="sheet-field">
+            <label>Cash</label>
+            <input type="number" id="incomeSplitCash" value="0" oninput="updateTruckIncomeSplitPreview()">
+          </div>
+
+          <div class="sheet-field">
+            <label>bKash</label>
+            <input type="number" id="incomeSplitBkash" value="0" oninput="updateTruckIncomeSplitPreview()">
+          </div>
+
+          <div class="sheet-field">
+            <label>Nagad</label>
+            <input type="number" id="incomeSplitNagad" value="0" oninput="updateTruckIncomeSplitPreview()">
+          </div>
+
+          <div class="sheet-field">
+            <label>Rocket</label>
+            <input type="number" id="incomeSplitRocket" value="0" oninput="updateTruckIncomeSplitPreview()">
+          </div>
+
+          <div class="sheet-field">
+            <label>Upay</label>
+            <input type="number" id="incomeSplitUpay" value="0" oninput="updateTruckIncomeSplitPreview()">
+          </div>
+
+          <div class="sheet-field">
+            <label>Bank</label>
+            <input type="number" id="incomeSplitBank" value="0" oninput="updateTruckIncomeSplitPreview()">
+          </div>
+
+          <div class="sheet-field">
+            <label>Card</label>
+            <input type="number" id="incomeSplitCard" value="0" oninput="updateTruckIncomeSplitPreview()">
+          </div>
+        </div>
+
+        <div class="split-total">মোট Split: <strong id="incomeSplitTotal">৳0</strong></div>
+      </div>
+
+      <div class="sheet-actions">
+        <button class="sheet-cancel" onclick="closeTruckIncomeSheet()">বাতিল</button>
+        <button class="sheet-save save-green" onclick="saveTruckIncome()">সংরক্ষণ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPENSE SHEET -->
+  <div class="sheet-overlay" id="truckExpenseSheet">
+    <div class="sheet">
+      <div class="sheet-title">ব্যয় যোগ করুন / Edit করুন</div>
+
+      <div class="sheet-field">
+        <label>তারিখ</label>
+        <input type="date" id="expenseDate">
+      </div>
+
+      <div class="sheet-field">
+        <label>ডিজেল (৳)</label>
+        <input type="number" id="expenseDiesel" placeholder="0">
+      </div>
+
+      <div class="sheet-field">
+        <label>মেরামত / সার্ভিসিং (৳)</label>
+        <input type="number" id="expenseRepair" placeholder="0">
+      </div>
+
+      <div class="sheet-field">
+        <label>ড্রাইভারের বেতন (৳)</label>
+        <input type="number" id="expenseDriverSalary" placeholder="0">
+      </div>
+
+      <div class="sheet-field">
+        <label>অন্যান্য (৳)</label>
+        <input type="number" id="expenseOther" placeholder="0">
+      </div>
+
+      <div class="sheet-field">
+        <label>নোট</label>
+        <textarea id="expenseNote" placeholder="অতিরিক্ত তথ্য"></textarea>
+      </div>
+
+      <div class="sheet-field">
+        <label>পেমেন্ট মেথড</label>
+        <select id="expensePaymentMethod" onchange="toggleTruckExpensePaymentMethod()">
+          <option value="Cash">Cash</option>
+          <option value="bKash">bKash</option>
+          <option value="Nagad">Nagad</option>
+          <option value="Rocket">Rocket</option>
+          <option value="Upay">Upay</option>
+          <option value="Bank">Bank</option>
+          <option value="Card">Card</option>
+          <option value="Mixed">Mixed</option>
+        </select>
+      </div>
+
+      <div id="expenseMixedSplitWrap" class="mixed-split-wrap hidden">
+        <div class="split-title">Mixed Split</div>
+
+        <div class="split-grid">
+          <div class="sheet-field">
+            <label>Cash</label>
+            <input type="number" id="expenseSplitCash" value="0" oninput="updateTruckExpenseSplitPreview()">
+          </div>
+
+          <div class="sheet-field">
+            <label>bKash</label>
+            <input type="number" id="expenseSplitBkash" value="0" oninput="updateTruckExpenseSplitPreview()">
+          </div>
+
+          <div class="sheet-field">
+            <label>Nagad</label>
+            <input type="number" id="expenseSplitNagad" value="0" oninput="updateTruckExpenseSplitPreview()">
+          </div>
+
+          <div class="sheet-field">
+            <label>Rocket</label>
+            <input type="number" id="expenseSplitRocket" value="0" oninput="updateTruckExpenseSplitPreview()">
+          </div>
+
+          <div class="sheet-field">
+            <label>Upay</label>
+            <input type="number" id="expenseSplitUpay" value="0" oninput="updateTruckExpenseSplitPreview()">
+          </div>
+
+          <div class="sheet-field">
+            <label>Bank</label>
+            <input type="number" id="expenseSplitBank" value="0" oninput="updateTruckExpenseSplitPreview()">
+          </div>
+
+          <div class="sheet-field">
+            <label>Card</label>
+            <input type="number" id="expenseSplitCard" value="0" oninput="updateTruckExpenseSplitPreview()">
+          </div>
+        </div>
+
+        <div class="split-total">মোট Split: <strong id="expenseSplitTotal">৳0</strong></div>
+      </div>
+
+      <div class="sheet-actions">
+        <button class="sheet-cancel" onclick="closeTruckExpenseSheet()">বাতিল</button>
+        <button class="sheet-save save-red" onclick="saveTruckExpense()">সংরক্ষণ</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/theme.js"></script>
+  <script type="module" src="js/truck.js"></script>
+
+  <script type="module">
+    import { requireLogin } from "./js/supabase-guard.js";
+    (async function () {
+      await requireLogin();
+    })();
+  </script>
+
+  <div id="addMenu" class="addMenu">
+    <div onclick="openPage('garage.html')">🛠️ Garage</div>
+    <div onclick="openPage('store.html')">🏪 Store</div>
+    <div onclick="openPage('bus.html')">🚌 Bus</div>
+    <div onclick="openPage('truck.html')">🚚 Truck</div>
+    <div onclick="openPage('notes.html')">📝 Notes</div>
+    <div onclick="openPage('hisab.html')">💰 হিসাব</div>
+  </div>
+
+  <div class="bottomNav ultraNav">
+    <div class="bottomItem" onclick="openPage('dashboard.html')">
+      <span>🏠</span>
+      <small>Home</small>
+    </div>
+
+    <div class="bottomItem" onclick="openPage('garage.html')">
+      <span>🛠️</span>
+      <small>Garage</small>
+    </div>
+
+    <div class="centerBtn" onclick="toggleAddMenu()">➕</div>
+
+    <div class="bottomItem" onclick="openPage('store.html')">
+      <span>🏪</span>
+      <small>Store</small>
+    </div>
+
+    <div class="bottomItem active" onclick="openPage('truck.html')">
+      <span>🚚</span>
+      <small>Truck</small>
+    </div>
+  </div>
+
+  <script src="js/bottom-nav.js"></script>
+</body>
+</html>

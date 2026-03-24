@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notes - Sheba Enterprise</title>
+  <link rel="stylesheet" href="css/notes.css" />
+
+  <script>
+    (function () {
+      const savedTheme = localStorage.getItem("appTheme") || "default";
+      document.documentElement.classList.remove("dark");
+      if (savedTheme === "dark") {
+        document.documentElement.classList.add("dark");
+      }
+    })();
+  </script>
+</head>
+<body>
+  <datalist id="noteCategories">
+    <option value="General"></option>
+    <option value="Personal"></option>
+    <option value="Work"></option>
+    <option value="Garage"></option>
+    <option value="Store"></option>
+    <option value="Bus"></option>
+    <option value="Truck"></option>
+    <option value="Accounts"></option>
+    <option value="Client"></option>
+    <option value="Important"></option>
+  </datalist>
+
+  <datalist id="noteTagsList">
+    <option value="urgent"></option>
+    <option value="payment"></option>
+    <option value="client"></option>
+    <option value="idea"></option>
+    <option value="meeting"></option>
+    <option value="parts"></option>
+    <option value="invoice"></option>
+    <option value="stock"></option>
+    <option value="todo"></option>
+  </datalist>
+
+  <div class="notes-page">
+    <header class="notes-header">
+      <div class="notes-topbar">
+        <button class="icon-btn" type="button" onclick="history.back()">←</button>
+
+        <div class="title-wrap">
+          <div class="title">NOTES</div>
+          <div class="subtitle"><span id="noteCountText">0</span>টি নোট</div>
+        </div>
+
+        <button class="icon-btn orange-btn" type="button" onclick="openNoteForm()">＋</button>
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-box">
+          <span>মোট নোট</span>
+          <strong id="sumNotes">0</strong>
+        </div>
+        <div class="summary-box">
+          <span>ফেভারিট</span>
+          <strong id="sumFavorite">0</strong>
+        </div>
+        <div class="summary-box">
+          <span>রিমাইন্ডার</span>
+          <strong id="sumReminder">0</strong>
+        </div>
+        <div class="summary-box">
+          <span>লকড</span>
+          <strong id="sumLocked">0</strong>
+        </div>
+        <div class="summary-box">
+          <span>হিডেন</span>
+          <strong id="sumHidden">0</strong>
+        </div>
+        <div class="summary-box">
+          <span>চেকলিস্ট</span>
+          <strong id="sumChecklist">0</strong>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-wrap">
+      <div id="warningCard" class="warning-card hidden">
+        <div class="warning-title">অ্যালার্ট</div>
+        <div class="warning-list" id="warningList"></div>
+      </div>
+
+      <section class="toolbar-card">
+        <div class="toolbar-grid">
+          <input
+            id="searchInput"
+            class="input"
+            type="text"
+            placeholder="শিরোনাম / বর্ণনা / tag / category সার্চ"
+            oninput="renderAllNotes()"
+          />
+
+          <select id="categoryFilter" class="select" onchange="renderAllNotes()">
+            <option value="">সব ক্যাটাগরি</option>
+          </select>
+
+          <select id="sortFilter" class="select" onchange="renderAllNotes()">
+            <option value="latest">সর্বশেষ</option>
+            <option value="oldest">সর্বপ্রথম</option>
+            <option value="favorite">ফেভারিট আগে</option>
+            <option value="titleAsc">A-Z</option>
+            <option value="titleDesc">Z-A</option>
+          </select>
+
+          <select id="viewFilter" class="select" onchange="renderAllNotes()">
+            <option value="active">Active Notes</option>
+            <option value="hidden">Hidden</option>
+            <option value="all">All Notes</option>
+          </select>
+        </div>
+
+        <div class="toolbar-actions">
+          <button class="action-btn primary" type="button" onclick="openNoteForm()">নতুন নোট</button>
+          <button class="action-btn yellow" type="button" onclick="requestNotificationPermission()">Notification</button>
+          <button class="action-btn green" type="button" onclick="exportSelectedOrAllPdf()">PDF Export</button>
+        </div>
+      </section>
+
+      <section class="panel-card">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Quick Templates</div>
+            <div class="panel-sub">দ্রুত template দিয়ে note তৈরি</div>
+          </div>
+        </div>
+
+        <div class="quick-template-grid">
+          <button class="quick-template-btn" type="button" onclick="openTemplate('general')">General</button>
+          <button class="quick-template-btn" type="button" onclick="openTemplate('todo')">Todo</button>
+          <button class="quick-template-btn" type="button" onclick="openTemplate('meeting')">Meeting</button>
+          <button class="quick-template-btn" type="button" onclick="openTemplate('client')">Client</button>
+          <button class="quick-template-btn" type="button" onclick="openTemplate('idea')">Idea</button>
+          <button class="quick-template-btn" type="button" onclick="openTemplate('payment')">Payment</button>
+        </div>
+      </section>
+
+      <section class="tab-strip">
+        <button class="tab-btn active" data-tab="notes" type="button" onclick="switchTab('notes')">Notes</button>
+        <button class="tab-btn" data-tab="checklists" type="button" onclick="switchTab('checklists')">Checklist</button>
+        <button class="tab-btn" data-tab="reminders" type="button" onclick="switchTab('reminders')">Reminders</button>
+        <button class="tab-btn" data-tab="media" type="button" onclick="switchTab('media')">Media</button>
+        <button class="tab-btn" data-tab="reports" type="button" onclick="switchTab('reports')">Reports</button>
+      </section>
+
+      <section id="tab-notes" class="tab-panel active">
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">নোট তালিকা</div>
+              <div class="panel-sub">favorite, reminder, hidden, lock, media, checklist</div>
+            </div>
+            <button class="action-btn primary mid-btn" type="button" onclick="openNoteForm()">নতুন</button>
+          </div>
+
+          <div id="notesList" class="card-list"></div>
+        </div>
+      </section>
+
+      <section id="tab-checklists" class="tab-panel">
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Checklist Notes</div>
+              <div class="panel-sub">checkbox সহ todo note</div>
+            </div>
+          </div>
+
+          <div id="checklistList" class="card-list"></div>
+        </div>
+      </section>
+
+      <section id="tab-reminders" class="tab-panel">
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Reminder Notes</div>
+              <div class="panel-sub">তারিখ / সময় অনুযায়ী alert</div>
+            </div>
+          </div>
+
+          <div id="reminderList" class="card-list"></div>
+        </div>
+      </section>
+
+      <section id="tab-media" class="tab-panel">
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Media Notes</div>
+              <div class="panel-sub">image, audio, file attachment</div>
+            </div>
+          </div>
+
+          <div id="mediaList" class="card-list"></div>
+        </div>
+      </section>
+
+      <section id="tab-reports" class="tab-panel">
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Notes Reports</div>
+              <div class="panel-sub">PDF, backup, restore, summary</div>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <button class="action-btn primary" type="button" onclick="exportSelectedOrAllPdf()">PDF Export</button>
+            <button class="action-btn green" type="button" onclick="exportBackup()">Backup Export</button>
+            <button class="action-btn yellow" type="button" onclick="document.getElementById('restoreFile').click()">Backup Restore</button>
+            <button class="action-btn orange-solid" type="button" onclick="requestNotificationPermission()">Notification</button>
+          </div>
+
+          <input id="restoreFile" class="file-input" type="file" accept=".json" onchange="restoreBackup(event)" />
+
+          <div id="reportGrid" class="grid-2 mt-12"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- NOTE FORM MODAL -->
+  <div id="noteModal" class="modal">
+    <div class="modal-sheet large-sheet">
+      <div class="modal-head">
+        <div class="modal-title" id="noteModalTitle">নতুন নোট</div>
+        <button class="close-btn" type="button" onclick="closeNoteForm()">✕</button>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>শিরোনাম *</label>
+          <input id="noteTitle" class="input" type="text" placeholder="নোটের শিরোনাম" />
+        </div>
+
+        <div class="form-group">
+          <label>Category / Folder</label>
+          <input id="noteCategory" class="input" type="text" list="noteCategories" placeholder="General / Work / Personal" />
+        </div>
+
+        <div class="form-group full">
+          <label>Tags</label>
+          <input id="noteTags" class="input" type="text" list="noteTagsList" placeholder="tag1, tag2, tag3" />
+        </div>
+
+        <div class="form-group full">
+          <label>বিস্তারিত</label>
+          <textarea id="noteBody" class="textarea tall-textarea" placeholder="নোটের বিস্তারিত লিখুন..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Color Label</label>
+          <select id="noteColor" class="select">
+            <option value="default">Default</option>
+            <option value="orange">Orange</option>
+            <option value="yellow">Yellow</option>
+            <option value="green">Green</option>
+            <option value="blue">Blue</option>
+            <option value="red">Red</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Language</label>
+          <select id="noteVoiceLang" class="select">
+            <option value="bn-BD">বাংলা</option>
+            <option value="en-US">English</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Reminder Date</label>
+          <input id="noteReminderDate" class="input" type="date" />
+        </div>
+
+        <div class="form-group">
+          <label>Reminder Time</label>
+          <input id="noteReminderTime" class="input" type="time" />
+        </div>
+
+        <div class="form-group">
+          <label>Repeat Reminder</label>
+          <select id="noteReminderRepeat" class="select">
+            <option value="none">No Repeat</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Link to another note</label>
+          <select id="linkedNoteId" class="select">
+            <option value="">No link</option>
+          </select>
+        </div>
+
+        <div class="form-group full">
+          <label>Checklist Items</label>
+          <div id="checklistBuilder" class="checklist-builder"></div>
+          <div class="inline-actions mt-8">
+            <button class="tiny-action tiny-orange" type="button" onclick="addChecklistItem()">আইটেম যোগ</button>
+          </div>
+        </div>
+
+        <div class="form-group full">
+          <label>Formatting Tools</label>
+          <div class="format-toolbar">
+            <button class="format-btn" type="button" onclick="insertMarkdown('bold')"><b>B</b></button>
+            <button class="format-btn" type="button" onclick="insertMarkdown('italic')"><i>I</i></button>
+            <button class="format-btn" type="button" onclick="insertMarkdown('list')">• List</button>
+            <button class="format-btn" type="button" onclick="insertMarkdown('heading')">H</button>
+            <button class="format-btn" type="button" onclick="insertMarkdown('check')">☑</button>
+          </div>
+        </div>
+
+        <div class="form-group full">
+          <label>Character / Word Count</label>
+          <div class="mini-stats">
+            <div class="mini-stat-box">
+              <span>Characters</span>
+              <strong id="charCount">0</strong>
+            </div>
+            <div class="mini-stat-box">
+              <span>Words</span>
+              <strong id="wordCount">0</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group full">
+          <label>Image Upload</label>
+          <input id="noteImageInput" class="file-input" type="file" accept="image/*" multiple onchange="handleNoteImages(event)" />
+          <div class="inline-actions">
+            <button class="tiny-action tiny-orange" type="button" onclick="document.getElementById('noteImageInput').click()">ছবি আপলোড</button>
+            <button class="tiny-action tiny-blue" type="button" onclick="startCameraCapture()">ক্যামেরা</button>
+            <button class="tiny-action tiny-red" type="button" onclick="clearAllImages()">সব ছবি সরান</button>
+          </div>
+          <div id="imagePreviewList" class="preview-grid mt-8"></div>
+          <video id="noteCamera" class="camera-view hidden" autoplay playsinline></video>
+          <div class="inline-actions mt-8 hidden" id="cameraCaptureRow">
+            <button class="tiny-action tiny-green" type="button" onclick="captureCameraPhoto()">Capture</button>
+            <button class="tiny-action tiny-red" type="button" onclick="stopCameraCapture()">Close Camera</button>
+          </div>
+          <canvas id="noteCanvas" class="hidden"></canvas>
+        </div>
+
+        <div class="form-group full">
+          <label>Document Attachment</label>
+          <input id="noteDocInput" class="file-input" type="file" accept=".pdf,.txt,.doc,.docx,.xls,.xlsx,.jpg,.png" onchange="handleNoteDocs(event)" />
+          <div class="inline-actions">
+            <button class="tiny-action tiny-orange" type="button" onclick="document.getElementById('noteDocInput').click()">ফাইল যোগ</button>
+            <button class="tiny-action tiny-red" type="button" onclick="clearAllDocs()">সব ফাইল সরান</button>
+          </div>
+          <div id="docPreviewList" class="doc-list mt-8"></div>
+        </div>
+
+        <div class="form-group full">
+          <label>Voice / Speech</label>
+          <div class="inline-actions">
+            <button class="tiny-action tiny-green" type="button" onclick="startSpeechToText()">Speech → Text</button>
+            <button class="tiny-action tiny-blue" type="button" onclick="startAudioRecording()">Audio Record</button>
+            <button class="tiny-action tiny-red" type="button" onclick="stopAudioRecording()">Stop</button>
+          </div>
+          <div id="audioPreviewList" class="audio-list mt-8"></div>
+        </div>
+
+        <div class="form-group full">
+          <label>Note Options</label>
+          <div class="toggle-grid">
+            <label class="toggle-item"><input id="noteFavorite" type="checkbox" /> Favorite</label>
+            <label class="toggle-item"><input id="noteLocked" type="checkbox" /> Lock</label>
+            <label class="toggle-item"><input id="noteHidden" type="checkbox" /> Hidden</label>
+            <label class="toggle-item"><input id="noteIsChecklist" type="checkbox" /> Checklist Note</label>
+          </div>
+        </div>
+
+        <div class="form-group full hidden" id="lockPinWrap">
+          <label>Lock PIN</label>
+          <input id="noteLockPin" class="input" type="password" placeholder="৪ digit PIN" maxlength="8" />
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="footer-mini-btn footer-mini-cancel" type="button" onclick="closeNoteForm()">✕</button>
+        <button class="footer-mini-btn footer-mini-save orange-save" type="button" onclick="saveNote()">✓</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTE DETAIL MODAL -->
+  <div id="noteDetailModal" class="modal">
+    <div class="modal-sheet large-sheet">
+      <div class="modal-head">
+        <div class="modal-title">নোট বিস্তারিত</div>
+        <button class="close-btn" type="button" onclick="closeNoteDetail()">✕</button>
+      </div>
+
+      <div id="noteDetailContent"></div>
+    </div>
+  </div>
+
+  <!-- IMAGE VIEWER -->
+  <div id="imageViewerModal" class="modal">
+    <div class="modal-sheet viewer-sheet">
+      <div class="modal-head">
+        <div class="modal-title">Image Preview</div>
+        <button class="close-btn" type="button" onclick="closeImageViewer()">✕</button>
+      </div>
+
+      <div class="image-viewer-wrap">
+        <button class="viewer-nav left" type="button" onclick="prevImage()">‹</button>
+        <img id="viewerImage" class="viewer-image" alt="Preview" />
+        <button class="viewer-nav right" type="button" onclick="nextImage()">›</button>
+      </div>
+    </div>
+  </div>
+
+  <input id="ocrImageInput" class="file-input" type="file" accept="image/*" onchange="handleOcrImage(event)" />
+
+  <script src="js/theme.js"></script>
+  <script type="module" src="js/notes.js"></script>
+  
+  
+  
+  
+  
+  
+  
+  <div id="addMenu" class="addMenu">
+  <div onclick="openPage('garage.html')">🛠️ Garage</div>
+  <div onclick="openPage('store.html')">🏪 Store</div>
+  <div onclick="openPage('bus.html')">🚌 Bus</div>
+  <div onclick="openPage('truck.html')">🚚 Truck</div>
+  <div onclick="openPage('notes.html')">📝 Notes</div>
+  <div onclick="openPage('hisab.html')">💰 হিসাব</div>
+</div>
+
+<div class="bottomNav ultraNav">
+  <div class="bottomItem" onclick="openPage('dashboard.html')">
+    <span>🏠</span>
+    <small>Home</small>
+  </div>
+
+  <div class="bottomItem" onclick="openPage('garage.html')">
+    <span>🛠️</span>
+    <small>Garage</small>
+  </div>
+
+  <div class="centerBtn" onclick="toggleAddMenu()">➕</div>
+
+  <div class="bottomItem" onclick="openPage('store.html')">
+    <span>🏪</span>
+    <small>Store</small>
+  </div>
+
+  <div class="bottomItem active" onclick="openPage('notes.html')">
+    <span>📝</span>
+    <small>Notes</small>
+  </div>
+</div>
+
+<script src="js/bottom-nav.js"></script>
+  
+  
+  
+  
+  
+  
+  
+  
+</body>
+</html>

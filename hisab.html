@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>হিসাব - Sheba Enterprise</title>
+  <link rel="stylesheet" href="css/accounts.css" />
+
+  <script>
+    (function () {
+      const savedTheme = localStorage.getItem("appTheme") || "default";
+      document.documentElement.classList.remove("dark");
+      if (savedTheme === "dark") {
+        document.documentElement.classList.add("dark");
+      }
+    })();
+  </script>
+</head>
+<body>
+  <datalist id="accountPartyList">
+    <option value="Customer"></option>
+    <option value="Supplier"></option>
+    <option value="Garage Client"></option>
+    <option value="Bus Owner"></option>
+    <option value="Truck Owner"></option>
+    <option value="Store Customer"></option>
+  </datalist>
+
+  <datalist id="accountCategoryList">
+    <option value="Service Income"></option>
+    <option value="Product Sale"></option>
+    <option value="Trip Income"></option>
+    <option value="Freight Income"></option>
+    <option value="Fuel Expense"></option>
+    <option value="Repair Expense"></option>
+    <option value="Parts Expense"></option>
+    <option value="Salary"></option>
+    <option value="Toll"></option>
+    <option value="Other"></option>
+  </datalist>
+
+  <div class="accounts-page">
+    <header class="accounts-header">
+      <div class="accounts-topbar">
+        <button class="icon-btn" type="button" onclick="history.back()">←</button>
+
+        <div class="title-wrap">
+          <div class="title">হিসাব</div>
+          <div class="subtitle">
+            <span id="ledgerCountText">0</span> টি ট্রানজেকশন
+          </div>
+        </div>
+
+        <button class="icon-btn orange-btn" type="button" onclick="openEntryForm()">＋</button>
+      </div>
+
+      <div class="summary-top-grid">
+        <div class="summary-box income-box">
+          <span>মোট আয়</span>
+          <strong id="headerTotalIncome">৳0</strong>
+        </div>
+
+        <div class="summary-box cash-box">
+          <span>নগদ আয়</span>
+          <strong id="headerCashIncome">৳0</strong>
+        </div>
+
+        <div class="summary-box due-box">
+          <span>বাকি আয়</span>
+          <strong id="headerDueIncome">৳0</strong>
+        </div>
+
+        <div class="summary-box expense-box">
+          <span>মোট ব্যয়</span>
+          <strong id="headerTotalExpense">৳0</strong>
+        </div>
+
+        <div class="summary-box balance-box">
+          <span>বর্তমান ব্যালেন্স</span>
+          <strong id="headerBalance">৳0</strong>
+        </div>
+
+        <div class="summary-box due-box">
+          <span>মোট পাওনা</span>
+          <strong id="headerReceivable">৳0</strong>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-wrap">
+      <div id="warningCard" class="warning-card hidden">
+        <div class="warning-title">অ্যালার্ট</div>
+        <div class="warning-list" id="warningList"></div>
+      </div>
+
+      <section class="tab-strip">
+        <button class="tab-btn active" data-tab="summary" type="button" onclick="switchTab('summary')">Summary</button>
+        <button class="tab-btn" data-tab="transactions" type="button" onclick="switchTab('transactions')">Transactions</button>
+        <button class="tab-btn" data-tab="due" type="button" onclick="switchTab('due')">Due</button>
+        <button class="tab-btn" data-tab="reports" type="button" onclick="switchTab('reports')">Reports</button>
+      </section>
+
+      <section class="action-strip-card">
+        <div class="action-rows">
+          <div class="action-row">
+            <button class="mini-action green" type="button" onclick="exportAccountsPdf()">PDF</button>
+            <button class="mini-action yellow" type="button" onclick="exportBackup()">Backup</button>
+          </div>
+
+          <div class="action-row">
+            <button class="mini-action primary" type="button" onclick="requestNotificationPermission()">Alert</button>
+            <button class="mini-action soft" type="button" onclick="document.getElementById('restoreFile').click()">Restore</button>
+          </div>
+
+          <div class="action-row">
+            <button class="mini-action blue" type="button" onclick="syncModuleData()">রিফ্রেশ</button>
+            <div class="refresh-time-inline">আপডেট: <span id="lastSyncTextSmall">--</span></div>
+          </div>
+        </div>
+
+        <input id="restoreFile" class="file-input" type="file" accept=".json" onchange="restoreBackup(event)" />
+      </section>
+
+      <section class="toolbar-card">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">ফিল্টার ও সার্চ</div>
+            <div class="panel-sub">module, type, category, party, note দিয়ে খুঁজুন</div>
+          </div>
+        </div>
+
+        <div class="toolbar-grid">
+          <input
+            id="searchInput"
+            class="input"
+            type="text"
+            placeholder="module / party / category / note সার্চ"
+            oninput="renderAllAccounts()"
+          />
+
+          <select id="moduleFilter" class="select" onchange="renderAllAccounts()">
+            <option value="all">সব Module</option>
+            <option value="garage">Garage</option>
+            <option value="store">Store</option>
+            <option value="bus">Bus</option>
+            <option value="truck">Truck</option>
+            <option value="manual">Manual</option>
+          </select>
+
+          <select id="typeFilter" class="select" onchange="renderAllAccounts()">
+            <option value="all">সব Type</option>
+            <option value="income">শুধু আয়</option>
+            <option value="expense">শুধু ব্যয়</option>
+          </select>
+
+          <select id="sortFilter" class="select" onchange="renderAllAccounts()">
+            <option value="latest">সর্বশেষ</option>
+            <option value="oldest">সর্বপ্রথম</option>
+            <option value="high">বড় Amount আগে</option>
+            <option value="low">ছোট Amount আগে</option>
+          </select>
+        </div>
+      </section>
+
+      <section id="tab-summary" class="tab-panel active">
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">আজকের হিসাব</div>
+              <div class="panel-sub">আজকের সব আয়, ব্যয়, নগদ, বাকি</div>
+            </div>
+            <span class="section-chip">Today</span>
+          </div>
+          <div id="todaySummaryGrid"></div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">মাসিক হিসাব</div>
+              <div class="panel-sub">চলতি মাসের combined হিসাব</div>
+            </div>
+            <span class="section-chip">Monthly</span>
+          </div>
+          <div id="monthSummaryGrid"></div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">সর্বমোট হিসাব</div>
+              <div class="panel-sub">সব module মিলিয়ে overall হিসাব</div>
+            </div>
+            <span class="section-chip">Overall</span>
+          </div>
+          <div id="overallSummaryGrid"></div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Module Wise Summary</div>
+              <div class="panel-sub">Garage, Store, Bus, Truck, Manual আলাদা হিসাব</div>
+            </div>
+          </div>
+
+          <div id="moduleSummaryList" class="card-list"></div>
+        </div>
+      </section>
+
+      <section id="tab-transactions" class="tab-panel">
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">সকল ট্রানজেকশন</div>
+              <div class="panel-sub">সব module-এর ledger entries</div>
+            </div>
+          </div>
+
+          <div id="transactionList" class="card-list"></div>
+        </div>
+      </section>
+
+      <section id="tab-due" class="tab-panel">
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">পাওনা / বাকি হিসাব</div>
+              <div class="panel-sub">যেগুলো এখনও পুরো settle হয়নি</div>
+            </div>
+
+            <select id="dueViewFilter" class="select select-small" onchange="renderDueCenter()">
+              <option value="all">সব Due</option>
+              <option value="garage">Garage</option>
+              <option value="store">Store</option>
+              <option value="bus">Bus</option>
+              <option value="truck">Truck</option>
+              <option value="manual">Manual</option>
+            </select>
+          </div>
+
+          <div id="dueSummaryGrid" class="grid-2"></div>
+          <div id="dueList" class="card-list mt-12"></div>
+        </div>
+      </section>
+
+      <section id="tab-reports" class="tab-panel">
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">হিসাব রিপোর্ট</div>
+              <div class="panel-sub">দিন / মাস / বছর / date range রিপোর্ট</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Report Mode</label>
+            <select id="reportMode" class="select" onchange="renderReportModeFields(); renderReports()">
+              <option value="dateRange">Date Range</option>
+              <option value="singleDate">Single Day</option>
+              <option value="monthYear">Month</option>
+              <option value="yearOnly">Year</option>
+            </select>
+          </div>
+
+          <div id="reportDynamicFields" class="grid-2"></div>
+          <div id="reportGrid" class="grid-2 mt-12"></div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Recent Ledger</div>
+              <div class="panel-sub">রিপোর্ট range-এর সাম্প্রতিক লেনদেন</div>
+            </div>
+          </div>
+
+          <div id="recentLedgerList" class="card-list"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="entryModal" class="modal">
+    <div class="modal-sheet large-sheet">
+      <div class="modal-head">
+        <div class="modal-title" id="entryModalTitle">নতুন হিসাব এন্ট্রি</div>
+        <button class="close-btn" type="button" onclick="closeEntryForm()">✕</button>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Module</label>
+          <select id="entryModule" class="select">
+            <option value="manual">Manual</option>
+            <option value="garage">Garage</option>
+            <option value="store">Store</option>
+            <option value="bus">Bus</option>
+            <option value="truck">Truck</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Type</label>
+          <select id="entryType" class="select" onchange="updateEntryModeLabels()">
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>তারিখ</label>
+          <input id="entryDate" class="input" type="date" />
+        </div>
+
+        <div class="form-group">
+          <label>Reference No</label>
+          <input id="entryRefNo" class="input" type="text" placeholder="invoice / doc no" />
+        </div>
+
+        <div class="form-group">
+          <label>Party / Client / Supplier</label>
+          <input id="entryParty" class="input" type="text" list="accountPartyList" placeholder="নাম" />
+        </div>
+
+        <div class="form-group">
+          <label>Category</label>
+          <input id="entryCategory" class="input" type="text" list="accountCategoryList" placeholder="Service Income / Fuel Expense" />
+        </div>
+
+        <div class="form-group">
+          <label id="entryTotalLabel">মোট Amount</label>
+          <input id="entryTotalAmount" class="input" type="number" min="0" step="0.01" oninput="updateEntryAmounts()" />
+        </div>
+
+        <div class="form-group">
+          <label id="entryCashLabel">নগদ Amount</label>
+          <input id="entryCashAmount" class="input" type="number" min="0" step="0.01" value="0" oninput="updateEntryAmounts()" />
+        </div>
+
+        <div class="form-group">
+          <label id="entryDueLabel">বাকি Amount</label>
+          <input id="entryDueAmount" class="input" type="number" min="0" step="0.01" value="0" oninput="updateEntryAmounts()" />
+        </div>
+
+        <div class="form-group">
+          <label>Payment Method</label>
+          <select id="entryMethod" class="select">
+            <option value="Cash">Cash</option>
+            <option value="bKash">bKash</option>
+            <option value="Nagad">Nagad</option>
+            <option value="Bank">Bank</option>
+            <option value="Mixed">Mixed</option>
+          </select>
+        </div>
+
+        <div class="form-group full">
+          <label>Note</label>
+          <textarea id="entryNote" class="textarea" placeholder="বিস্তারিত লিখুন"></textarea>
+        </div>
+      </div>
+
+      <div class="mini-summary-grid">
+        <div class="mini-stat-box">
+          <span>মোট</span>
+          <strong id="entryTotalShow">৳0</strong>
+        </div>
+        <div class="mini-stat-box">
+          <span>নগদ</span>
+          <strong id="entryCashShow">৳0</strong>
+        </div>
+        <div class="mini-stat-box">
+          <span>বাকি</span>
+          <strong id="entryDueShow">৳0</strong>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="footer-mini-btn footer-mini-cancel" type="button" onclick="closeEntryForm()">✕</button>
+        <button class="footer-mini-btn footer-mini-save orange-save" type="button" onclick="saveEntry()">✓</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="detailModal" class="modal">
+    <div class="modal-sheet large-sheet">
+      <div class="modal-head">
+        <div class="modal-title">লেনদেন বিস্তারিত</div>
+        <button class="close-btn" type="button" onclick="closeDetailModal()">✕</button>
+      </div>
+
+      <div id="detailContent"></div>
+    </div>
+  </div>
+
+  <script src="js/theme.js"></script>
+  <script type="module" src="js/hishab.js"></script>
+
+  <script type="module">
+    import { requireLogin } from "./js/supabase-guard.js";
+    (async function () {
+      await requireLogin();
+    })();
+  </script>
+  
+  
+  
+  
+  <div id="addMenu" class="addMenu">
+  <div onclick="openPage('garage.html')">🛠️ Garage</div>
+  <div onclick="openPage('store.html')">🏪 Store</div>
+  <div onclick="openPage('bus.html')">🚌 Bus</div>
+  <div onclick="openPage('truck.html')">🚚 Truck</div>
+  <div onclick="openPage('notes.html')">📝 Notes</div>
+  <div onclick="openPage('hisab.html')">💰 হিসাব</div>
+</div>
+
+<div class="bottomNav ultraNav">
+  <div class="bottomItem" onclick="openPage('dashboard.html')">
+    <span>🏠</span>
+    <small>Home</small>
+  </div>
+
+  <div class="bottomItem" onclick="openPage('garage.html')">
+    <span>🛠️</span>
+    <small>Garage</small>
+  </div>
+
+  <div class="centerBtn" onclick="toggleAddMenu()">➕</div>
+
+  <div class="bottomItem" onclick="openPage('store.html')">
+    <span>🏪</span>
+    <small>Store</small>
+  </div>
+
+  <div class="bottomItem active" onclick="openPage('hisab.html')">
+    <span>💰</span>
+    <small>হিসাব</small>
+  </div>
+</div>
+
+<script src="js/bottom-nav.js"></script>
+  
+  
+  
+  
+  
+</body>
+</html>

@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings - Sheba Enterprise</title>
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <script>
+    (function () {
+      const savedTheme = localStorage.getItem("appTheme") || "default";
+      document.documentElement.classList.remove("dark");
+      if (savedTheme === "dark") {
+        document.documentElement.classList.add("dark");
+      }
+    })();
+  </script>
+</head>
+<body>
+
+  <div class="bg-anim">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+  </div>
+
+  <div class="settings-app">
+    <div class="settings-header">
+      <button class="settings-back-btn" onclick="goDashboard()">←</button>
+      <div>
+        <h1>Settings</h1>
+        <p>অ্যাপ ও প্রোফাইল সেটিংস</p>
+      </div>
+    </div>
+
+    <div class="settings-menu-card">
+      <button class="settings-menu-btn" onclick="toggleSection('profileSection')">
+        <div class="settings-menu-left">
+          <span>👤</span>
+          <div>
+            <h3>Profile</h3>
+            <p>নাম, ইমেইল, ছবি</p>
+          </div>
+        </div>
+        <span class="settings-menu-arrow">›</span>
+      </button>
+
+      <div id="profileSection" class="settings-collapse">
+        <div class="settings-profile-top">
+          <div class="settings-avatar-wrap">
+            <img id="profilePreview" src="https://via.placeholder.com/100?text=User" alt="Profile">
+          </div>
+
+          <div class="settings-profile-info">
+            <h2 id="profileName">User Name</h2>
+            <p id="profileEmail">user@email.com</p>
+            <span id="profileUsername">@username</span>
+          </div>
+        </div>
+
+        <input
+          type="file"
+          id="profilePhotoInput"
+          accept="image/*"
+          class="hidden-input"
+          onchange="previewPhoto(event)"
+        >
+
+        <button class="settings-primary-btn" onclick="document.getElementById('profilePhotoInput').click()">
+          ছবি পরিবর্তন
+        </button>
+
+        <button class="settings-secondary-btn" onclick="savePhoto()">
+          ছবি সেভ করুন
+        </button>
+
+        <div class="settings-field">
+          <label>First Name</label>
+          <input type="text" id="firstName" placeholder="First Name">
+        </div>
+
+        <div class="settings-field">
+          <label>Last Name</label>
+          <input type="text" id="lastName" placeholder="Last Name">
+        </div>
+
+        <button class="settings-primary-btn" onclick="updateName()">
+          নাম আপডেট করুন
+        </button>
+      </div>
+    </div>
+
+    <div class="settings-menu-card">
+      <button class="settings-menu-btn" onclick="toggleSection('passwordSection')">
+        <div class="settings-menu-left">
+          <span>🔑</span>
+          <div>
+            <h3>Password Change</h3>
+            <p>পাসওয়ার্ড পরিবর্তন করুন</p>
+          </div>
+        </div>
+        <span class="settings-menu-arrow">›</span>
+      </button>
+
+      <div id="passwordSection" class="settings-collapse">
+        <div class="settings-field">
+          <label>Current Password</label>
+          <input type="password" id="currentPassword" placeholder="বর্তমান Password">
+        </div>
+
+        <div class="settings-field">
+          <label>New Password</label>
+          <input type="password" id="newPassword" placeholder="নতুন Password">
+        </div>
+
+        <button class="settings-primary-btn" onclick="changePassword()">
+          Password Update করুন
+        </button>
+      </div>
+    </div>
+
+    <div class="settings-menu-card">
+      <div class="settings-static-row">
+        <div class="settings-menu-left">
+          <span>🌙</span>
+          <div>
+            <h3>Dark Mode</h3>
+            <p>ডার্ক মোড চালু/বন্ধ</p>
+          </div>
+        </div>
+
+        <label class="switch">
+          <input type="checkbox" id="darkModeToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Switch Account -->
+    <div class="settings-menu-card">
+      <button class="settings-menu-btn" onclick="switchAccount()">
+        <div class="settings-menu-left">
+          <span>🔄</span>
+          <div>
+            <h3>Switch Account</h3>
+            <p>অন্য অ্যাকাউন্টে লগইন করুন</p>
+          </div>
+        </div>
+        <span class="settings-menu-arrow">›</span>
+      </button>
+    </div>
+
+    <!-- Logout -->
+    <div class="settings-menu-card danger-card">
+      <button class="settings-menu-btn" onclick="logoutUser()">
+        <div class="settings-menu-left">
+          <span>🚪</span>
+          <div>
+            <h3>Logout</h3>
+            <p>অ্যাকাউন্ট থেকে বের হন</p>
+          </div>
+        </div>
+        <span class="settings-menu-arrow">›</span>
+      </button>
+    </div>
+  </div>
+
+  <script src="js/theme.js"></script>
+
+  <script type="module">
+    import { supabase } from "./js/supabase-client.js";
+    import { signOutUser, getCurrentUser, signInUser } from "./js/supabase-auth.js";
+
+    let loggedInUser = null;
+    let tempPhoto = "";
+
+    function getProfiles() {
+      try {
+        return JSON.parse(localStorage.getItem("signupProfiles") || "{}");
+      } catch {
+        return {};
+      }
+    }
+
+    function saveProfile(email, profile) {
+      const safeEmail = (email || "").toLowerCase();
+      if (!safeEmail) return;
+
+      const profiles = getProfiles();
+      profiles[safeEmail] = profile;
+      localStorage.setItem("signupProfiles", JSON.stringify(profiles));
+    }
+
+    function getProfile(email) {
+      const profiles = getProfiles();
+      return profiles[(email || "").toLowerCase()] || null;
+    }
+
+    function saveLoggedInUser(userData) {
+      localStorage.setItem("loggedInUser", JSON.stringify(userData));
+      loggedInUser = userData;
+    }
+
+    async function checkAuth() {
+      try {
+        const { user, error } = await getCurrentUser();
+
+        if (error || !user) {
+          localStorage.removeItem("loggedInUser");
+          alert("প্রথমে Login করুন");
+          window.location.replace("login.html");
+          return;
+        }
+
+        const currentEmail = (user.email || "").toLowerCase();
+        const rawLocalUser = JSON.parse(localStorage.getItem("loggedInUser") || "null");
+
+        const savedLocalUser =
+          rawLocalUser && (rawLocalUser.email || "").toLowerCase() === currentEmail
+            ? rawLocalUser
+            : null;
+
+        const savedProfile = getProfile(currentEmail);
+
+        loggedInUser = {
+          email: user.email || "",
+          fullName: savedProfile?.fullName || savedLocalUser?.fullName || "",
+          firstname: savedProfile?.firstname || savedLocalUser?.firstname || "",
+          lastname: savedProfile?.lastname || savedLocalUser?.lastname || "",
+          username: savedProfile?.username || savedLocalUser?.username || "",
+          profileImage: savedProfile?.profileImage || savedLocalUser?.profileImage || "",
+          createdAt: savedProfile?.createdAt || savedLocalUser?.createdAt || new Date().toISOString()
+        };
+
+        saveLoggedInUser(loggedInUser);
+        renderProfile();
+      } catch (err) {
+        localStorage.removeItem("loggedInUser");
+        window.location.replace("login.html");
+      }
+    }
+
+    function renderProfile() {
+      if (!loggedInUser) return;
+
+      const fullName =
+        loggedInUser.fullName ||
+        ((loggedInUser.firstname || "") + " " + (loggedInUser.lastname || "")).trim() ||
+        "User";
+
+      document.getElementById("profileName").innerText = fullName;
+      document.getElementById("profileEmail").innerText = loggedInUser.email || "-";
+      document.getElementById("profileUsername").innerText =
+        "@" + (loggedInUser.username || "username");
+
+      document.getElementById("firstName").value = loggedInUser.firstname || "";
+      document.getElementById("lastName").value = loggedInUser.lastname || "";
+
+      if (loggedInUser.profileImage) {
+        document.getElementById("profilePreview").src = loggedInUser.profileImage;
+      } else {
+        document.getElementById("profilePreview").src =
+          "https://via.placeholder.com/100?text=User";
+      }
+    }
+
+    function saveUser(updatedUser) {
+      const finalUser = {
+        email: updatedUser.email || "",
+        fullName: updatedUser.fullName || "",
+        firstname: updatedUser.firstname || "",
+        lastname: updatedUser.lastname || "",
+        username: updatedUser.username || "",
+        profileImage: updatedUser.profileImage || "",
+        createdAt: updatedUser.createdAt || new Date().toISOString()
+      };
+
+      saveProfile(finalUser.email, finalUser);
+      saveLoggedInUser(finalUser);
+    }
+
+    window.toggleSection = function (sectionId) {
+      const allSections = document.querySelectorAll(".settings-collapse");
+
+      allSections.forEach((section) => {
+        if (section.id === sectionId) {
+          section.classList.toggle("open");
+        } else {
+          section.classList.remove("open");
+        }
+      });
+    };
+
+    window.previewPhoto = function (event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        tempPhoto = e.target.result;
+        document.getElementById("profilePreview").src = tempPhoto;
+      };
+      reader.readAsDataURL(file);
+    };
+
+    window.savePhoto = function () {
+      if (!tempPhoto) {
+        alert("আগে একটি ছবি নির্বাচন করুন");
+        return;
+      }
+
+      loggedInUser.profileImage = tempPhoto;
+      saveUser(loggedInUser);
+      alert("Profile photo save হয়েছে");
+      tempPhoto = "";
+    };
+
+    window.updateName = function () {
+      const firstName = document.getElementById("firstName").value.trim();
+      const lastName = document.getElementById("lastName").value.trim();
+
+      if (!firstName || !lastName) {
+        alert("দুইটা নামই দিতে হবে");
+        return;
+      }
+
+      loggedInUser.firstname = firstName;
+      loggedInUser.lastname = lastName;
+      loggedInUser.fullName = firstName + " " + lastName;
+
+      saveUser(loggedInUser);
+      renderProfile();
+      alert("নাম update হয়েছে");
+    };
+
+    window.changePassword = async function () {
+      const currentPassword = document.getElementById("currentPassword").value.trim();
+      const newPassword = document.getElementById("newPassword").value.trim();
+
+      if (!currentPassword || !newPassword) {
+        alert("সব ঘর পূরণ করুন");
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        alert("নতুন Password কমপক্ষে 6 অক্ষরের হতে হবে");
+        return;
+      }
+
+      if (!loggedInUser?.email) {
+        alert("User email পাওয়া যায়নি");
+        return;
+      }
+
+      const { error: loginError } = await signInUser(loggedInUser.email, currentPassword);
+
+      if (loginError) {
+        alert("বর্তমান Password ভুল");
+        return;
+      }
+
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) {
+        alert(error.message || "Password update failed");
+        return;
+      }
+
+      document.getElementById("currentPassword").value = "";
+      document.getElementById("newPassword").value = "";
+
+      alert("Password update হয়েছে");
+    };
+
+    window.switchAccount = async function () {
+      const { error } = await signOutUser();
+
+      if (error) {
+        alert(error.message || "Switch account failed");
+        return;
+      }
+
+      localStorage.removeItem("loggedInUser");
+      window.location.replace("login.html");
+    };
+
+    window.logoutUser = async function () {
+      const { error } = await signOutUser();
+
+      if (error) {
+        alert(error.message || "Logout failed");
+        return;
+      }
+
+      localStorage.removeItem("loggedInUser");
+      alert("Logout Success");
+      window.location.replace("login.html");
+    };
+
+    window.goDashboard = function () {
+      window.location.href = "dashboard.html";
+    };
+
+    function applyThemeLocal(theme) {
+      document.documentElement.classList.remove("dark");
+      document.body.classList.remove("dark");
+
+      if (theme === "dark") {
+        document.documentElement.classList.add("dark");
+        document.body.classList.add("dark");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", async function () {
+      await checkAuth();
+
+      const darkToggle = document.getElementById("darkModeToggle");
+      const savedTheme = localStorage.getItem("appTheme") || "default";
+
+      darkToggle.checked = savedTheme === "dark";
+
+      if (typeof applyTheme === "function") {
+        applyTheme(savedTheme);
+      } else {
+        applyThemeLocal(savedTheme);
+      }
+
+      darkToggle.addEventListener("change", function () {
+        const theme = this.checked ? "dark" : "default";
+        localStorage.setItem("appTheme", theme);
+
+        if (typeof applyTheme === "function") {
+          applyTheme(theme);
+        } else {
+          applyThemeLocal(theme);
+        }
+      });
+    });
+  </script>
+</body>
+</html>

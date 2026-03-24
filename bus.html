@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bus - Sheba Enterprise</title>
+  <link rel="stylesheet" href="css/style.css" />
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+    (function () {
+      const savedTheme = localStorage.getItem("appTheme") || "default";
+      document.documentElement.classList.remove("dark");
+      if (savedTheme === "dark") {
+        document.documentElement.classList.add("dark");
+      }
+    })();
+  </script>
+</head>
+<body>
+
+  <!-- BUS LIST PAGE -->
+  <div class="bus-page" id="busListPage">
+
+    <div class="bus-header">
+      <div class="bus-topbar">
+        <button class="bus-icon-btn" onclick="goDashboard()">←</button>
+
+        <div class="bus-title-wrap">
+          <div class="bus-title">BUS</div>
+          <div class="bus-subtitle"><span id="busCountText">0</span>টি বাস নিবন্ধিত</div>
+        </div>
+
+        <button class="bus-icon-btn" onclick="openBusForm()">＋</button>
+      </div>
+
+      <div class="bus-summary-row">
+        <div class="bus-mini-summary">
+          <span>বাস</span>
+          <strong id="summaryBusCount">0</strong>
+        </div>
+
+        <div class="bus-mini-summary">
+          <span>আয়</span>
+          <strong id="summaryIncome">৳0</strong>
+        </div>
+
+        <div class="bus-mini-summary">
+          <span>ব্যয়</span>
+          <strong id="summaryExpense">৳0</strong>
+        </div>
+
+        <div class="bus-mini-summary">
+          <span>লাভ/ক্ষতি</span>
+          <strong id="summaryProfit">৳0</strong>
+        </div>
+      </div>
+
+      <div class="bus-toolbar">
+        <input
+          type="text"
+          id="busSearch"
+          class="bus-search"
+          placeholder="বাস নম্বর / রুট সার্চ"
+          oninput="renderBusList()"
+        />
+
+        <select id="busSort" class="bus-filter" onchange="renderBusList()">
+          <option value="latest">সর্বশেষ</option>
+          <option value="income">আয় বেশি</option>
+          <option value="expense">ব্যয় বেশি</option>
+          <option value="profit">লাভ বেশি</option>
+          <option value="number">নাম্বার</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="bus-wrap">
+
+      <div class="warning-card" id="warningCard">
+        <div class="warning-title">Fitness / Tax Warning</div>
+        <div class="warning-list" id="warningList"></div>
+      </div>
+
+      <div id="emptyBusState" class="empty-state-bus hidden">
+        <div class="empty-bus-icon">🚌</div>
+        <h3>কোনো বাস নেই</h3>
+        <p>নতুন বাস যোগ করতে + বাটনে চাপুন</p>
+        <button class="primary-bus-btn" onclick="openBusForm()">বাস যোগ করুন</button>
+      </div>
+
+      <div id="busList" class="bus-list"></div>
+
+      <div class="bus-report-card">
+        <div class="report-title">অ্যাডভান্স রিপোর্ট</div>
+
+        <div class="report-mode-grid">
+          <select id="reportMode" class="report-filter" onchange="handleReportModeChange()">
+            <option value="monthYear">নির্দিষ্ট মাস + বছর</option>
+            <option value="yearOnly">নির্দিষ্ট বছর</option>
+            <option value="singleDate">নির্দিষ্ট দিন</option>
+            <option value="dateRange">নির্দিষ্ট date range</option>
+          </select>
+        </div>
+
+        <div id="reportDynamicFields" class="report-dynamic-grid"></div>
+
+        <div class="report-label" id="reportLabel">রিপোর্ট প্রস্তুত</div>
+
+        <div class="report-grid">
+          <div class="report-box">
+            <span>মোট আয়</span>
+            <strong class="income-color" id="reportIncome">৳0</strong>
+          </div>
+
+          <div class="report-box">
+            <span>মোট ব্যয়</span>
+            <strong class="expense-color" id="reportExpense">৳0</strong>
+          </div>
+
+          <div class="report-box">
+            <span>লাভ/ক্ষতি</span>
+            <strong id="reportBalance">৳0</strong>
+          </div>
+
+          <div class="report-box">
+            <span>ট্রিপ</span>
+            <strong id="reportTrips">0</strong>
+          </div>
+        </div>
+
+        <div class="report-actions">
+          <button class="report-btn primary" onclick="applyAdvancedReport()">রিপোর্ট দেখুন</button>
+          <button class="report-btn" onclick="downloadBusPDF()">PDF Report</button>
+        </div>
+
+        <div class="chart-wrap">
+          <canvas id="busChart" height="180"></canvas>
+        </div>
+      </div>
+
+      <div class="bus-report-card">
+        <div class="report-title">Smart Analytics</div>
+
+        <div class="report-grid">
+          <div class="report-box">
+            <span>Next Month Prediction</span>
+            <strong id="aiPredictionIncome">৳0</strong>
+          </div>
+
+          <div class="report-box">
+            <span>Best Bus</span>
+            <strong id="bestBusNumber">-</strong>
+          </div>
+
+          <div class="report-box">
+            <span>This Month Income</span>
+            <strong id="monthlySummaryIncome">৳0</strong>
+          </div>
+
+          <div class="report-box">
+            <span>This Month Expense</span>
+            <strong id="monthlySummaryExpense">৳0</strong>
+          </div>
+        </div>
+
+        <div class="report-label" id="smartAlertText">সব সিস্টেম ঠিক আছে</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- BUS DETAIL PAGE -->
+  <div class="bus-detail-page hidden" id="busDetailPage">
+    <div class="bus-detail-top">
+      <button class="bus-icon-btn" onclick="backToBusList()">←</button>
+      <div class="detail-bus-number" id="detailBusNumber">BUS</div>
+      <button class="bus-icon-btn" onclick="openEditCurrentBus()">✎</button>
+    </div>
+
+    <div class="detail-summary">
+      <div class="detail-summary-card">
+        <span>আয়</span>
+        <strong class="income-color" id="detailIncome">৳0</strong>
+      </div>
+
+      <div class="detail-summary-card">
+        <span>ব্যয়</span>
+        <strong class="expense-color" id="detailExpense">৳0</strong>
+      </div>
+
+      <div class="detail-summary-card" id="detailProfitCard">
+        <span id="detailProfitLabel">লাভ</span>
+        <strong id="detailProfitValue">৳0</strong>
+      </div>
+    </div>
+
+    <div class="detail-tabs">
+      <button class="tab-btn active" id="incomeTabBtn" onclick="switchDetailTab('income')">
+        আয় (<span id="incomeTabCount">0</span>)
+      </button>
+      <button class="tab-btn" id="expenseTabBtn" onclick="switchDetailTab('expense')">
+        ব্যয় (<span id="expenseTabCount">0</span>)
+      </button>
+    </div>
+
+    <button class="add-entry-btn income-btn" id="addIncomeBtn" onclick="openIncomeSheet()">⊕ আয় যোগ করুন</button>
+    <button class="add-entry-btn expense-btn hidden" id="addExpenseBtn" onclick="openExpenseSheet()">⊕ ব্যয় যোগ করুন</button>
+
+    <div id="historyList" class="history-list"></div>
+
+    <div id="noHistoryState" class="no-history hidden">
+      <div style="font-size:64px;opacity:.45;margin-bottom:8px;">↗</div>
+      <div id="noHistoryText">কোনো আয় নেই</div>
+    </div>
+
+    <div class="bus-report-card">
+      <div class="report-title">এই বাসের রিপোর্ট</div>
+
+      <div class="report-mode-grid">
+        <select id="detailReportMode" class="report-filter" onchange="handleDetailReportMode()">
+          <option value="monthYear">নির্দিষ্ট মাস + বছর</option>
+          <option value="yearOnly">নির্দিষ্ট বছর</option>
+          <option value="singleDate">নির্দিষ্ট দিন</option>
+          <option value="dateRange">নির্দিষ্ট date range</option>
+        </select>
+      </div>
+
+      <div id="detailReportFields" class="report-dynamic-grid"></div>
+
+      <div class="report-label" id="detailReportLabel">এই বাসের রিপোর্ট প্রস্তুত</div>
+
+      <div class="report-grid">
+        <div class="report-box">
+          <span>আয়</span>
+          <strong id="detailReportIncome" class="income-color">৳0</strong>
+        </div>
+
+        <div class="report-box">
+          <span>ব্যয়</span>
+          <strong id="detailReportExpense" class="expense-color">৳0</strong>
+        </div>
+
+        <div class="report-box">
+          <span>লাভ/ক্ষতি</span>
+          <strong id="detailReportBalance">৳0</strong>
+        </div>
+
+        <div class="report-box">
+          <span>ট্রিপ</span>
+          <strong id="detailReportTrips">0</strong>
+        </div>
+      </div>
+
+      <div class="report-actions">
+        <button class="report-btn primary" onclick="applyBusDetailReport()">রিপোর্ট দেখুন</button>
+      </div>
+
+      <div class="chart-wrap">
+        <canvas id="detailBusChart" height="180"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- BUS FORM SHEET -->
+  <div class="sheet-overlay" id="busFormSheet">
+    <div class="sheet">
+      <div class="sheet-title" id="busFormTitle">নতুন বাস</div>
+
+      <div class="sheet-field">
+        <label>বাস নম্বর *</label>
+        <input type="text" id="busNumber" placeholder="বাসের নম্বর">
+      </div>
+
+      <div class="sheet-field">
+        <label>মডেল</label>
+        <input type="text" id="busModel" placeholder="বাসের মডেল">
+      </div>
+
+      <div class="sheet-field">
+        <label>স্ট্যাটাস</label>
+        <select id="busStatus">
+          <option value="Running">Running</option>
+          <option value="Maintenance">Maintenance</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+      </div>
+
+      <div class="sheet-field">
+        <label>Route</label>
+        <input type="text" id="busRoute" placeholder="যেমন: ঢাকা-চট্টগ্রাম">
+      </div>
+
+      <div class="sheet-field">
+        <label>Registration</label>
+        <input type="text" id="busReg" placeholder="Registration">
+      </div>
+
+      <div class="sheet-field">
+        <label>Fitness Date</label>
+        <input type="date" id="busFitness">
+      </div>
+
+      <div class="sheet-field">
+        <label>Tax Date</label>
+        <input type="date" id="busTax">
+      </div>
+
+      <div class="sheet-field">
+        <label>ড্রাইভারের নাম</label>
+        <input type="text" id="driverName" placeholder="ড্রাইভারের নাম">
+      </div>
+
+      <div class="sheet-field">
+        <label>ড্রাইভারের মোবাইল</label>
+        <input type="text" id="driverPhone" placeholder="মোবাইল নম্বর">
+      </div>
+
+      <div class="sheet-field">
+        <label>হেলপারের নাম</label>
+        <input type="text" id="helperName" placeholder="হেলপারের নাম">
+      </div>
+
+      <div class="sheet-actions">
+        <button class="sheet-cancel" onclick="closeBusForm()">বাতিল</button>
+        <button class="sheet-save save-blue" onclick="saveBus()">সংরক্ষণ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- INCOME SHEET -->
+  <div class="sheet-overlay" id="incomeSheet">
+    <div class="sheet">
+      <div class="sheet-title">আয় যোগ করুন</div>
+
+      <div class="sheet-field">
+        <label>তারিখ</label>
+        <input type="date" id="incomeDate">
+      </div>
+
+      <div class="sheet-field">
+        <label>ট্রিপ সংখ্যা</label>
+        <input type="number" id="incomeTrips" placeholder="0">
+      </div>
+
+      <div class="sheet-field">
+        <label>মোট আয় (৳)</label>
+        <input type="number" id="incomeAmount" placeholder="৳ পরিমাণ">
+      </div>
+
+      <div class="sheet-field">
+        <label>Payment Method</label>
+        <select id="busIncomeMethod" onchange="toggleBusIncomeSplit()">
+          <option value="Cash">Cash</option>
+          <option value="bKash">bKash</option>
+          <option value="Nagad">Nagad</option>
+          <option value="Rocket">Rocket</option>
+          <option value="Upay">Upay</option>
+          <option value="Bank">Bank</option>
+          <option value="Card">Card</option>
+          <option value="Mixed">Mixed</option>
+        </select>
+      </div>
+
+      <div id="busIncomeSplitWrap" class="sheet-field hidden">
+        <label>Mixed Split</label>
+        <div class="split-grid">
+          <div class="sheet-field"><input id="busIncomeSplitCash" type="number" placeholder="Cash amount"></div>
+          <div class="sheet-field"><input id="busIncomeSplitBkash" type="number" placeholder="bKash amount"></div>
+          <div class="sheet-field"><input id="busIncomeSplitNagad" type="number" placeholder="Nagad amount"></div>
+          <div class="sheet-field"><input id="busIncomeSplitRocket" type="number" placeholder="Rocket amount"></div>
+          <div class="sheet-field"><input id="busIncomeSplitUpay" type="number" placeholder="Upay amount"></div>
+          <div class="sheet-field"><input id="busIncomeSplitBank" type="number" placeholder="Bank amount"></div>
+          <div class="sheet-field"><input id="busIncomeSplitCard" type="number" placeholder="Card amount"></div>
+        </div>
+      </div>
+
+      <div class="sheet-actions">
+        <button class="sheet-cancel" onclick="closeIncomeSheet()">বাতিল</button>
+        <button class="sheet-save save-green" onclick="saveIncome()">সংরক্ষণ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPENSE SHEET -->
+  <div class="sheet-overlay" id="expenseSheet">
+    <div class="sheet">
+      <div class="sheet-title">ব্যয় যোগ করুন</div>
+
+      <div class="sheet-field">
+        <label>তারিখ</label>
+        <input type="date" id="expenseDate">
+      </div>
+
+      <div class="sheet-field">
+        <label>ডিজেল (৳)</label>
+        <input type="number" id="expenseDiesel" placeholder="0">
+      </div>
+
+      <div class="sheet-field">
+        <label>সার্ভিসিং (৳)</label>
+        <input type="number" id="expenseService" placeholder="0">
+      </div>
+
+      <div class="sheet-field">
+        <label>ড্রাইভারের বেতন (৳)</label>
+        <input type="number" id="expenseDriverSalary" placeholder="0">
+      </div>
+
+      <div class="sheet-field">
+        <label>অন্যান্য (৳)</label>
+        <input type="number" id="expenseOther" placeholder="0">
+      </div>
+
+      <div class="sheet-field">
+        <label>Payment Method</label>
+        <select id="busExpenseMethod" onchange="toggleBusExpenseSplit()">
+          <option value="Cash">Cash</option>
+          <option value="bKash">bKash</option>
+          <option value="Nagad">Nagad</option>
+          <option value="Rocket">Rocket</option>
+          <option value="Upay">Upay</option>
+          <option value="Bank">Bank</option>
+          <option value="Card">Card</option>
+          <option value="Mixed">Mixed</option>
+        </select>
+      </div>
+
+      <div id="busExpenseSplitWrap" class="sheet-field hidden">
+        <label>Mixed Split</label>
+        <div class="split-grid">
+          <div class="sheet-field"><input id="busExpenseSplitCash" type="number" placeholder="Cash amount"></div>
+          <div class="sheet-field"><input id="busExpenseSplitBkash" type="number" placeholder="bKash amount"></div>
+          <div class="sheet-field"><input id="busExpenseSplitNagad" type="number" placeholder="Nagad amount"></div>
+          <div class="sheet-field"><input id="busExpenseSplitRocket" type="number" placeholder="Rocket amount"></div>
+          <div class="sheet-field"><input id="busExpenseSplitUpay" type="number" placeholder="Upay amount"></div>
+          <div class="sheet-field"><input id="busExpenseSplitBank" type="number" placeholder="Bank amount"></div>
+          <div class="sheet-field"><input id="busExpenseSplitCard" type="number" placeholder="Card amount"></div>
+        </div>
+      </div>
+
+      <div class="sheet-field">
+        <label>নোট</label>
+        <textarea id="expenseNote" placeholder="অতিরিক্ত তথ্য"></textarea>
+      </div>
+
+      <div class="sheet-actions">
+        <button class="sheet-cancel" onclick="closeExpenseSheet()">বাতিল</button>
+        <button class="sheet-save save-red" onclick="saveExpense()">সংরক্ষণ</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/theme.js"></script>
+  <script type="module" src="js/bus.js"></script>
+
+  <script type="module">
+    import { requireLogin } from "./js/supabase-guard.js";
+
+    (async function () {
+      await requireLogin();
+    })();
+  </script>
+
+  <div id="addMenu" class="addMenu">
+    <div onclick="openPage('garage.html')">🛠️ Garage</div>
+    <div onclick="openPage('store.html')">🏪 Store</div>
+    <div onclick="openPage('bus.html')">🚌 Bus</div>
+    <div onclick="openPage('truck.html')">🚚 Truck</div>
+    <div onclick="openPage('notes.html')">📝 Notes</div>
+    <div onclick="openPage('hisab.html')">💰 হিসাব</div>
+  </div>
+
+  <div class="bottomNav ultraNav">
+    <div class="bottomItem" onclick="openPage('dashboard.html')">
+      <span>🏠</span>
+      <small>Home</small>
+    </div>
+
+    <div class="bottomItem" onclick="openPage('garage.html')">
+      <span>🛠️</span>
+      <small>Garage</small>
+    </div>
+
+    <div class="centerBtn" onclick="toggleAddMenu()">➕</div>
+
+    <div class="bottomItem" onclick="openPage('store.html')">
+      <span>🏪</span>
+      <small>Store</small>
+    </div>
+
+    <div class="bottomItem active" onclick="openPage('bus.html')">
+      <span>🚌</span>
+      <small>Bus</small>
+    </div>
+  </div>
+
+  <script src="js/bottom-nav.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Store - Sheba Enterprise</title>
+  <link rel="stylesheet" href="css/store.css" />
+
+  <script>
+    (function () {
+      const savedTheme = localStorage.getItem("appTheme") || "default";
+      document.documentElement.classList.remove("dark");
+      if (savedTheme === "dark") {
+        document.documentElement.classList.add("dark");
+      }
+    })();
+  </script>
+</head>
+<body>
+  <datalist id="partNames">
+    <option value="Brake Pad"></option>
+    <option value="Brake Shoe"></option>
+    <option value="Air Filter"></option>
+    <option value="Oil Filter"></option>
+    <option value="Fuel Filter"></option>
+    <option value="Shock Absorber"></option>
+    <option value="Headlight"></option>
+    <option value="Tail Light"></option>
+    <option value="Radiator Fan"></option>
+    <option value="Clutch Plate"></option>
+    <option value="Side Mirror"></option>
+    <option value="Wheel Bearing"></option>
+    <option value="Battery"></option>
+    <option value="Horn"></option>
+    <option value="Timing Belt"></option>
+    <option value="Spark Plug"></option>
+    <option value="Bumper"></option>
+    <option value="Door Handle"></option>
+    <option value="Engine Mount"></option>
+    <option value="Ball Joint"></option>
+  </datalist>
+
+  <datalist id="partCategories">
+    <option value="Engine"></option>
+    <option value="Brake"></option>
+    <option value="Suspension"></option>
+    <option value="Electrical"></option>
+    <option value="Body Parts"></option>
+    <option value="Lighting"></option>
+    <option value="Cooling System"></option>
+    <option value="Filters"></option>
+    <option value="Transmission"></option>
+    <option value="Interior"></option>
+    <option value="Accessories"></option>
+    <option value="Wheel / Tyre"></option>
+  </datalist>
+
+  <datalist id="partBrands">
+    <option value="Toyota"></option>
+    <option value="Nissan"></option>
+    <option value="Honda"></option>
+    <option value="Mitsubishi"></option>
+    <option value="Hyundai"></option>
+    <option value="Kia"></option>
+    <option value="Bosch"></option>
+    <option value="Denso"></option>
+    <option value="NGK"></option>
+    <option value="Valeo"></option>
+    <option value="TYC"></option>
+    <option value="Depo"></option>
+    <option value="Aisin"></option>
+    <option value="Exedy"></option>
+  </datalist>
+
+  <div class="store-page">
+    <div class="store-header">
+      <div class="store-topbar">
+        <button class="icon-btn" type="button" onclick="history.back()">←</button>
+
+        <div class="title-wrap">
+          <div class="title">STORE</div>
+          <div class="subtitle"><span id="productCountText">0</span>টি পার্টস</div>
+        </div>
+
+        <button class="icon-btn" type="button" onclick="openProductForm()">＋</button>
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-box">
+          <span>পার্টস</span>
+          <strong id="sumProducts">0</strong>
+        </div>
+        <div class="summary-box">
+          <span>স্টক</span>
+          <strong id="sumStock">0</strong>
+        </div>
+        <div class="summary-box">
+          <span>স্টক ভ্যালু</span>
+          <strong id="sumStockValue">৳0</strong>
+        </div>
+        <div class="summary-box">
+          <span>বিক্রি</span>
+          <strong id="sumSales">৳0</strong>
+        </div>
+        <div class="summary-box">
+          <span>কাস্টমার ডিউ</span>
+          <strong id="sumCustomerDue">৳0</strong>
+        </div>
+        <div class="summary-box">
+          <span>সাপ্লায়ার ডিউ</span>
+          <strong id="sumSupplierDue">৳0</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-wrap">
+      <div class="tab-row">
+        <button class="tab-btn active" data-tab="parts" type="button" onclick="switchTab('parts')">Parts</button>
+        <button class="tab-btn" data-tab="sales" type="button" onclick="switchTab('sales')">Sales</button>
+        <button class="tab-btn" data-tab="purchases" type="button" onclick="switchTab('purchases')">Purchases</button>
+        <button class="tab-btn" data-tab="dues" type="button" onclick="switchTab('dues')">Due List</button>
+        <button class="tab-btn" data-tab="reports" type="button" onclick="switchTab('reports')">Reports</button>
+      </div>
+
+      <div class="toolbar">
+        <input
+          id="searchInput"
+          class="input"
+          type="text"
+          placeholder="নাম / code / barcode / brand / location সার্চ"
+          oninput="renderAll()"
+        />
+        <select id="categoryFilter" class="select" onchange="renderAll()">
+          <option value="">সব ক্যাটাগরি</option>
+        </select>
+      </div>
+
+      <section id="tab-parts" class="tab-panel active">
+        <div id="warningCard" class="warning-card hidden">
+          <div class="warning-title">অ্যালার্ট</div>
+          <div class="warning-list" id="warningList"></div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">পার্টস তালিকা</div>
+              <div class="panel-sub">একই পার্টসের condition / country / brand / code আলাদা হলে আলাদা entry দিন</div>
+            </div>
+            <button class="action-btn primary mid-btn" type="button" onclick="openProductForm()">নতুন পার্টস</button>
+          </div>
+          <div id="productList" class="card-list"></div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Low Stock / Reorder List</div>
+              <div class="panel-sub">স্টক কমে গেলে এখানে দেখাবে</div>
+            </div>
+          </div>
+          <div id="reorderList" class="card-list"></div>
+        </div>
+      </section>
+
+      <section id="tab-sales" class="tab-panel">
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Invoice / Quotation Builder</div>
+              <div class="panel-sub">এক invoice-এ একাধিক product</div>
+            </div>
+            <button class="action-btn green mid-btn" type="button" onclick="resetSalesBuilder()">রিসেট</button>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Document Type</label>
+              <select id="saleDocType" class="select" onchange="updateSalesTotals()">
+                <option value="invoice">Invoice</option>
+                <option value="quotation">Quotation</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>তারিখ</label>
+              <input id="saleDate" class="input" type="date" />
+            </div>
+
+            <div class="form-group">
+              <label>Invoice No</label>
+              <input id="saleDocNo" class="input" type="text" placeholder="auto" />
+            </div>
+
+            <div class="form-group">
+              <label>Due Date</label>
+              <input id="saleDueDate" class="input" type="date" />
+            </div>
+
+            <div class="form-group">
+              <label>Customer Name</label>
+              <input id="saleCustomerName" class="input" type="text" />
+            </div>
+
+            <div class="form-group">
+              <label>Customer Mobile</label>
+              <input id="saleCustomerPhone" class="input" type="text" />
+            </div>
+
+            <div class="form-group full">
+              <label>Address</label>
+              <input id="saleCustomerAddress" class="input" type="text" />
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="panel-head small-head">
+            <div class="panel-title panel-title-sm">Items</div>
+            <button class="action-btn primary mid-btn" type="button" onclick="addSaleRow()">আইটেম যোগ</button>
+          </div>
+
+          <div id="saleRows"></div>
+
+         <div class="grid-2 mt-10">
+  <div class="form-group">
+    <label>Invoice Discount</label>
+    <input id="saleDiscount" class="input" type="number" min="0" step="0.01" value="0" oninput="updateSalesTotals()" />
+  </div>
+
+  <div class="form-group">
+    <label>Paid Now</label>
+    <input id="salePaid" class="input" type="number" min="0" step="0.01" value="0" oninput="updateSalesTotals()" />
+  </div>
+
+  <div class="form-group full">
+    <label>Initial Payment Method</label>
+    <select id="salePaymentMethod" class="select" onchange="toggleSalePaymentFields()">
+      <option value="Cash">Cash</option>
+      <option value="bKash">bKash</option>
+      <option value="Nagad">Nagad</option>
+      <option value="Rocket">Rocket</option>
+      <option value="Upay">Upay</option>
+      <option value="Bank">Bank</option>
+      <option value="Card">Card</option>
+      <option value="Mixed">Mixed</option>
+    </select>
+  </div>
+
+  <div id="saleMixedWrap" class="form-group full hidden">
+    <label>Initial Mixed Payment Split</label>
+
+    <div class="split-box">
+      <div class="split-grid">
+        <div class="form-group">
+          <label>Cash</label>
+          <input id="saleSplitCash" class="input" type="number" min="0" step="0.01" value="0" oninput="updateSaleSplitPreviewFromInputs(); syncSaleAmountFromSplit();" />
+        </div>
+
+        <div class="form-group">
+          <label>bKash</label>
+          <input id="saleSplitBkash" class="input" type="number" min="0" step="0.01" value="0" oninput="updateSaleSplitPreviewFromInputs(); syncSaleAmountFromSplit();" />
+        </div>
+
+        <div class="form-group">
+          <label>Nagad</label>
+          <input id="saleSplitNagad" class="input" type="number" min="0" step="0.01" value="0" oninput="updateSaleSplitPreviewFromInputs(); syncSaleAmountFromSplit();" />
+        </div>
+
+        <div class="form-group">
+          <label>Rocket</label>
+          <input id="saleSplitRocket" class="input" type="number" min="0" step="0.01" value="0" oninput="updateSaleSplitPreviewFromInputs(); syncSaleAmountFromSplit();" />
+        </div>
+
+        <div class="form-group">
+          <label>Upay</label>
+          <input id="saleSplitUpay" class="input" type="number" min="0" step="0.01" value="0" oninput="updateSaleSplitPreviewFromInputs(); syncSaleAmountFromSplit();" />
+        </div>
+
+        <div class="form-group">
+          <label>Bank</label>
+          <input id="saleSplitBank" class="input" type="number" min="0" step="0.01" value="0" oninput="updateSaleSplitPreviewFromInputs(); syncSaleAmountFromSplit();" />
+        </div>
+
+        <div class="form-group">
+          <label>Card</label>
+          <input id="saleSplitCard" class="input" type="number" min="0" step="0.01" value="0" oninput="updateSaleSplitPreviewFromInputs(); syncSaleAmountFromSplit();" />
+        </div>
+      </div>
+
+      <div class="split-total">
+        মোট Split: <strong id="saleSplitTotal">৳0</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+          <div class="grid-2 mt-10">
+            <div class="metric-box">
+              <span>Subtotal</span>
+              <strong id="saleSubtotal">৳0</strong>
+            </div>
+            <div class="metric-box">
+              <span>Grand Total</span>
+              <strong id="saleGrandTotal">৳0</strong>
+            </div>
+            <div class="metric-box">
+              <span>Paid</span>
+              <strong id="salePaidShow" class="money-green">৳0</strong>
+            </div>
+            <div class="metric-box">
+              <span>Due</span>
+              <strong id="saleDueShow" class="money-yellow">৳0</strong>
+            </div>
+          </div>
+
+          <div class="form-group mt-10">
+            <label>Note</label>
+            <textarea id="saleNote" class="textarea"></textarea>
+          </div>
+
+          <div class="action-row-2">
+            <button class="action-btn primary" type="button" onclick="saveSaleDocument()">Save</button>
+            <button class="action-btn yellow" type="button" onclick="requestNotificationPermission()">Notification</button>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Recent Sales / Quotations</div>
+              <div class="panel-sub">Invoice, quotation, payment, return, print</div>
+            </div>
+          </div>
+          <div id="salesList" class="card-list"></div>
+        </div>
+      </section>
+
+      <section id="tab-purchases" class="tab-panel">
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Purchase Module</div>
+              <div class="panel-sub">Supplier থেকে product কেনা + stock increase</div>
+            </div>
+            <button class="action-btn green mid-btn" type="button" onclick="resetPurchaseBuilder()">রিসেট</button>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Product</label>
+              <select id="purchaseProduct" class="select"></select>
+            </div>
+
+            <div class="form-group">
+              <label>Purchase Date</label>
+              <input id="purchaseDate" class="input" type="date" />
+            </div>
+
+            <div class="form-group">
+              <label>Purchase Invoice No</label>
+              <input id="purchaseDocNo" class="input" type="text" placeholder="auto" />
+            </div>
+
+            <div class="form-group">
+              <label>Due Date</label>
+              <input id="purchaseDueDate" class="input" type="date" />
+            </div>
+
+            <div class="form-group">
+              <label>Supplier Name</label>
+              <input id="purchaseSupplierName" class="input" type="text" />
+            </div>
+
+            <div class="form-group">
+              <label>Supplier Mobile</label>
+              <input id="purchaseSupplierPhone" class="input" type="text" />
+            </div>
+
+            <div class="form-group">
+              <label>Quantity</label>
+              <input id="purchaseQty" class="input" type="number" min="0.01" step="0.01" />
+            </div>
+
+            <div class="form-group">
+              <label>Unit Cost</label>
+              <input id="purchaseUnitCost" class="input" type="number" min="0" step="0.01" />
+            </div>
+<div class="form-group">
+  <label>Paid Now</label>
+  <input id="purchasePaid" class="input" type="number" min="0" step="0.01" value="0" />
+</div>
+
+<div class="form-group full">
+  <label>Initial Payment Method</label>
+  <select id="purchasePaymentMethod" class="select" onchange="togglePurchasePaymentFields()">
+    <option value="Cash">Cash</option>
+    <option value="bKash">bKash</option>
+    <option value="Nagad">Nagad</option>
+    <option value="Rocket">Rocket</option>
+    <option value="Upay">Upay</option>
+    <option value="Bank">Bank</option>
+    <option value="Card">Card</option>
+    <option value="Mixed">Mixed</option>
+  </select>
+</div>
+
+<div id="purchaseMixedWrap" class="form-group full hidden">
+  <label>Initial Mixed Payment Split</label>
+
+  <div class="split-box">
+    <div class="split-grid">
+      <div class="form-group">
+        <label>Cash</label>
+        <input id="purchaseSplitCash" class="input" type="number" min="0" step="0.01" value="0" oninput="updatePurchaseSplitPreviewFromInputs(); syncPurchaseAmountFromSplit();" />
+      </div>
+
+      <div class="form-group">
+        <label>bKash</label>
+        <input id="purchaseSplitBkash" class="input" type="number" min="0" step="0.01" value="0" oninput="updatePurchaseSplitPreviewFromInputs(); syncPurchaseAmountFromSplit();" />
+      </div>
+
+      <div class="form-group">
+        <label>Nagad</label>
+        <input id="purchaseSplitNagad" class="input" type="number" min="0" step="0.01" value="0" oninput="updatePurchaseSplitPreviewFromInputs(); syncPurchaseAmountFromSplit();" />
+      </div>
+
+      <div class="form-group">
+        <label>Rocket</label>
+        <input id="purchaseSplitRocket" class="input" type="number" min="0" step="0.01" value="0" oninput="updatePurchaseSplitPreviewFromInputs(); syncPurchaseAmountFromSplit();" />
+      </div>
+
+      <div class="form-group">
+        <label>Upay</label>
+        <input id="purchaseSplitUpay" class="input" type="number" min="0" step="0.01" value="0" oninput="updatePurchaseSplitPreviewFromInputs(); syncPurchaseAmountFromSplit();" />
+      </div>
+
+      <div class="form-group">
+        <label>Bank</label>
+        <input id="purchaseSplitBank" class="input" type="number" min="0" step="0.01" value="0" oninput="updatePurchaseSplitPreviewFromInputs(); syncPurchaseAmountFromSplit();" />
+      </div>
+
+      <div class="form-group">
+        <label>Card</label>
+        <input id="purchaseSplitCard" class="input" type="number" min="0" step="0.01" value="0" oninput="updatePurchaseSplitPreviewFromInputs(); syncPurchaseAmountFromSplit();" />
+      </div>
+    </div>
+
+    <div class="split-total">
+      মোট Split: <strong id="purchaseSplitTotal">৳0</strong>
+    </div>
+  </div>
+</div>
+
+<div class="form-group full">
+  <label>Note</label>
+  <textarea id="purchaseNote" class="textarea"></textarea>
+</div>
+            
+          </div>
+
+          <div class="action-row-2">
+            <button class="action-btn primary" type="button" onclick="savePurchaseDocument()">Purchase Save</button>
+            <button class="action-btn yellow" type="button" onclick="fillPurchaseCost()">Last Cost</button>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Recent Purchase Docs</div>
+              <div class="panel-sub">Supplier due + stock in</div>
+            </div>
+          </div>
+          <div id="purchaseList" class="card-list"></div>
+        </div>
+      </section>
+
+      <section id="tab-dues" class="tab-panel">
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Due Center</div>
+              <div class="panel-sub">Customer due + supplier due</div>
+            </div>
+            <select id="dueMode" class="select select-small" onchange="renderDueLists()">
+              <option value="customer">Customer Due</option>
+              <option value="supplier">Supplier Due</option>
+            </select>
+          </div>
+
+          <div id="dueList" class="card-list"></div>
+        </div>
+      </section>
+
+      <section id="tab-reports" class="tab-panel">
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Report Summary</div>
+              <div class="panel-sub">দিন / মাস / বছর / range রিপোর্ট</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Report Mode</label>
+            <select id="reportMode" class="select" onchange="renderReportModeFields(); renderReports()">
+              <option value="dateRange">Date Range</option>
+              <option value="singleDate">Single Day</option>
+              <option value="monthYear">Month</option>
+              <option value="yearOnly">Year</option>
+            </select>
+          </div>
+
+          <div id="reportDynamicFields" class="grid-2"></div>
+
+          <div class="action-grid-2 mt-10">
+            <button class="action-btn primary" type="button" onclick="renderReports()">রিপোর্ট আপডেট</button>
+            <button class="action-btn green" type="button" onclick="exportBackup()">Backup Export</button>
+            <button class="action-btn yellow" type="button" onclick="document.getElementById('restoreFile').click()">Backup Restore</button>
+            <button class="action-btn red" type="button" onclick="resetAllData()">Reset All</button>
+          </div>
+
+          <input id="restoreFile" class="file-input" type="file" accept=".json" onchange="restoreBackup(event)" />
+
+          <div id="reportGrid" class="grid-2 mt-12"></div>
+          <div id="analyticsList" class="card-list mt-12"></div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Stock Movement History</div>
+              <div class="panel-sub">Purchase, Sale, Return</div>
+            </div>
+          </div>
+          <div id="movementList" class="card-list"></div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Activity Log</div>
+              <div class="panel-sub">শেষ ৩০টি কাজ</div>
+            </div>
+          </div>
+          <div id="activityList" class="card-list"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- PRODUCT MODAL -->
+  <div id="productModal" class="modal">
+    <div class="modal-sheet">
+      <div class="modal-head">
+        <div class="modal-title" id="productModalTitle">নতুন পার্টস</div>
+        <button class="close-btn" type="button" onclick="closeProductForm()">✕</button>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label>পার্টসের নাম *</label>
+          <input id="productName" class="input" type="text" list="partNames" oninput="updateProductVariantPreview()" />
+        </div>
+
+        <div class="form-group">
+          <label>ক্যাটাগরি</label>
+          <input id="productCategory" class="input" type="text" list="partCategories" oninput="updateProductVariantPreview()" />
+        </div>
+
+        <div class="form-group">
+          <label>Brand / Company</label>
+          <input id="productBrand" class="input" type="text" list="partBrands" oninput="updateProductVariantPreview()" />
+        </div>
+
+        <div class="form-group">
+          <label>Condition</label>
+          <select id="productCondition" class="select" onchange="updateProductVariantPreview()">
+            <option value="">Optional</option>
+            <option value="New">নতুন</option>
+            <option value="Old">পুরাতন</option>
+            <option value="Recondition">রিকন্ডিশন</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Country / Origin</label>
+          <select id="productCountry" class="select" onchange="updateProductVariantPreview()">
+            <option value="">Optional</option>
+            <option value="Japan">Japan</option>
+            <option value="India">India</option>
+            <option value="China">China</option>
+            <option value="Bangladesh">Bangladesh</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Unit</label>
+          <input id="productUnit" class="input" type="text" placeholder="pcs / set / pair" />
+        </div>
+
+        <div class="form-group">
+          <label>Buy Price</label>
+          <input id="productBuyPrice" class="input" type="number" min="0" step="0.01" />
+        </div>
+
+        <div class="form-group">
+          <label>Sell Price</label>
+          <input id="productSellPrice" class="input" type="number" min="0" step="0.01" />
+        </div>
+
+        <div class="form-group">
+          <label>Current Stock</label>
+          <input id="productStock" class="input" type="number" min="0" step="0.01" />
+        </div>
+
+        <div class="form-group">
+          <label>Low Stock Limit</label>
+          <input id="productLowStock" class="input" type="number" min="0" step="0.01" value="5" />
+        </div>
+
+        <div class="form-group">
+          <label>Supplier Name</label>
+          <input id="productSupplier" class="input" type="text" />
+        </div>
+
+        <div class="form-group">
+          <label>Part No / Code</label>
+          <input id="productCode" class="input" type="text" oninput="updateProductVariantPreview()" />
+        </div>
+
+        <div class="form-group full">
+          <label>Variant Preview</label>
+          <div id="productVariantPreview" class="variant-preview">পার্টসের নাম, condition, country, brand, code অনুযায়ী preview এখানে দেখাবে</div>
+          <div class="field-hint">একই পার্টসের different condition / country / brand / code হলে আলাদা entry দিন।</div>
+        </div>
+
+        <div class="form-group">
+          <label>Barcode / QR Text</label>
+          <input id="productBarcode" class="input" type="text" />
+        </div>
+
+        <div class="form-group">
+          <label>Room</label>
+          <input id="productRoom" class="input" type="text" />
+        </div>
+
+        <div class="form-group">
+          <label>Rack</label>
+          <input id="productRack" class="input" type="text" />
+        </div>
+
+        <div class="form-group">
+          <label>Shelf</label>
+          <input id="productShelf" class="input" type="text" />
+        </div>
+
+        <div class="form-group">
+          <label>Cell / Slot</label>
+          <input id="productCell" class="input" type="text" />
+        </div>
+
+        <div class="form-group full">
+          <label>Details</label>
+          <textarea id="productDetails" class="textarea"></textarea>
+        </div>
+
+        <div class="form-group full">
+          <label>Product Image</label>
+          <input id="productImageInput" class="input" type="file" accept="image/*" capture="environment" onchange="handleProductImage(event)" />
+          <img id="productImagePreview" class="image-preview hidden" alt="Preview" />
+          <div class="small-action-row mt-8">
+            <button class="tiny-action tiny-purple" type="button" onclick="document.getElementById('productImageInput').click()">ছবি যোগ</button>
+            <button class="tiny-action tiny-red" type="button" onclick="removeProductImage()">সরান</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="footer-mini-btn footer-mini-cancel" type="button" onclick="closeProductForm()">✕</button>
+        <button class="footer-mini-btn footer-mini-save" type="button" onclick="saveProduct()">✓</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRODUCT DETAIL -->
+  <div id="productDetailModal" class="modal">
+    <div class="modal-sheet">
+      <div class="modal-head">
+        <div class="modal-title">পার্টসের বিস্তারিত</div>
+        <button class="close-btn" type="button" onclick="closeProductDetail()">✕</button>
+      </div>
+      <div id="productDetailContent"></div>
+    </div>
+  </div>
+
+  <!-- PAYMENT MODAL -->
+  <div id="paymentModal" class="modal">
+    <div class="modal-sheet">
+      <div class="modal-head">
+        <div class="modal-title" id="paymentModalTitle">Payment</div>
+        <button class="close-btn" type="button" onclick="closePaymentModal()">✕</button>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label>তারিখ</label>
+          <input id="paymentDate" class="input" type="date" />
+        </div>
+
+        <div class="form-group">
+          <label>Amount</label>
+          <input id="paymentAmount" class="input" type="number" min="0.01" step="0.01" />
+        </div>
+
+        <div class="form-group">
+          <label>Method</label>
+          <select id="paymentMethod" class="select" onchange="togglePaymentMethodFields()">
+            <option value="Cash">Cash</option>
+            <option value="bKash">bKash</option>
+            <option value="Nagad">Nagad</option>
+            <option value="Rocket">Rocket</option>
+            <option value="Upay">Upay</option>
+            <option value="Bank">Bank</option>
+            <option value="Card">Card</option>
+            <option value="Mixed">Mixed</option>
+          </select>
+        </div>
+
+        <div id="paymentMixedWrap" class="form-group full hidden">
+          <label>Mixed Payment Split</label>
+
+          <div class="split-box">
+            <div class="split-grid">
+              <div class="form-group">
+                <label>Cash</label>
+                <input id="paymentSplitCash" class="input" type="number" min="0" step="0.01" value="0" oninput="updatePaymentSplitPreview()" />
+              </div>
+
+              <div class="form-group">
+                <label>bKash</label>
+                <input id="paymentSplitBkash" class="input" type="number" min="0" step="0.01" value="0" oninput="updatePaymentSplitPreview()" />
+              </div>
+
+              <div class="form-group">
+                <label>Nagad</label>
+                <input id="paymentSplitNagad" class="input" type="number" min="0" step="0.01" value="0" oninput="updatePaymentSplitPreview()" />
+              </div>
+
+              <div class="form-group">
+                <label>Rocket</label>
+                <input id="paymentSplitRocket" class="input" type="number" min="0" step="0.01" value="0" oninput="updatePaymentSplitPreview()" />
+              </div>
+
+              <div class="form-group">
+                <label>Upay</label>
+                <input id="paymentSplitUpay" class="input" type="number" min="0" step="0.01" value="0" oninput="updatePaymentSplitPreview()" />
+              </div>
+
+              <div class="form-group">
+                <label>Bank</label>
+                <input id="paymentSplitBank" class="input" type="number" min="0" step="0.01" value="0" oninput="updatePaymentSplitPreview()" />
+              </div>
+
+              <div class="form-group">
+                <label>Card</label>
+                <input id="paymentSplitCard" class="input" type="number" min="0" step="0.01" value="0" oninput="updatePaymentSplitPreview()" />
+              </div>
+            </div>
+
+            <div class="split-total">
+              মোট Split: <strong id="paymentSplitTotal">৳0</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group full">
+          <label>Note</label>
+          <textarea id="paymentNote" class="textarea"></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="footer-mini-btn footer-mini-cancel" type="button" onclick="closePaymentModal()">✕</button>
+        <button class="footer-mini-btn footer-mini-save" type="button" onclick="savePayment()">✓</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/theme.js"></script>
+  <script type="module" src="js/store.js"></script>
+
+  <script type="module">
+    import { requireLogin } from "./js/supabase-guard.js";
+    (async function () {
+      await requireLogin();
+    })();
+  </script>
+
+  <div id="addMenu" class="addMenu">
+    <div onclick="openPage('garage.html')">🛠️ Garage</div>
+    <div onclick="openPage('store.html')">🏪 Store</div>
+    <div onclick="openPage('bus.html')">🚌 Bus</div>
+    <div onclick="openPage('truck.html')">🚚 Truck</div>
+    <div onclick="openPage('notes.html')">📝 Notes</div>
+    <div onclick="openPage('hisab.html')">💰 হিসাব</div>
+  </div>
+
+  <div class="bottomNav ultraNav">
+    <div class="bottomItem" onclick="openPage('dashboard.html')">
+      <span>🏠</span>
+      <small>Home</small>
+    </div>
+
+    <div class="bottomItem" onclick="openPage('garage.html')">
+      <span>🛠️</span>
+      <small>Garage</small>
+    </div>
+
+    <div class="centerBtn" onclick="toggleAddMenu()">➕</div>
+
+    <div class="bottomItem active" onclick="openPage('store.html')">
+      <span>🏪</span>
+      <small>Store</small>
+    </div>
+
+    <div class="bottomItem" onclick="openPage('bus.html')">
+      <span>🚌</span>
+      <small>Bus</small>
+    </div>
+  </div>
+
+  <script src="js/bottom-nav.js"></script>
+</body>
+</html>

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sheba Enterprise Dashboard</title>
+  <link rel="stylesheet" href="css/style.css" />
+
+  <script>
+    (function () {
+      const savedTheme = localStorage.getItem("appTheme") || "default";
+      document.documentElement.classList.remove("dark", "light");
+
+      if (savedTheme === "dark") {
+        document.documentElement.classList.add("dark");
+      } else if (savedTheme === "light") {
+        document.documentElement.classList.add("light");
+      }
+    })();
+  </script>
+
+  <script type="module">
+    import { getCurrentUser } from "./js/supabase-auth.js";
+
+    (async function () {
+      try {
+        const { user, error } = await getCurrentUser();
+
+        if (error || !user) {
+          localStorage.removeItem("loggedInUser");
+          window.location.replace("login.html");
+          return;
+        }
+
+        const currentEmail = (user.email || "").toLowerCase();
+        const savedProfiles = JSON.parse(localStorage.getItem("signupProfiles") || "{}");
+        const savedProfile = savedProfiles[currentEmail] || null;
+
+        const rawLocalUser = JSON.parse(localStorage.getItem("loggedInUser") || "null");
+        const matchedLocalUser =
+          rawLocalUser && (rawLocalUser.email || "").toLowerCase() === currentEmail
+            ? rawLocalUser
+            : null;
+
+        const finalUser = {
+          email: user.email || "",
+          fullName: savedProfile?.fullName || matchedLocalUser?.fullName || "",
+          firstname: savedProfile?.firstname || matchedLocalUser?.firstname || "",
+          lastname: savedProfile?.lastname || matchedLocalUser?.lastname || "",
+          username: savedProfile?.username || matchedLocalUser?.username || "",
+          profileImage: savedProfile?.profileImage || matchedLocalUser?.profileImage || "",
+          createdAt: savedProfile?.createdAt || matchedLocalUser?.createdAt || new Date().toISOString()
+        };
+
+        localStorage.setItem("loggedInUser", JSON.stringify(finalUser));
+      } catch (err) {
+        localStorage.removeItem("loggedInUser");
+        window.location.replace("login.html");
+      }
+    })();
+  </script>
+</head>
+
+<body class="dashboard-page">
+
+  <div class="bg-anim">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+  </div>
+
+  <div class="floating-particles" aria-hidden="true">
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+
+  <div class="app">
+    <div class="header">
+      <div class="bismillah">بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>
+
+      <div class="welcome">
+        স্বাগতম, <span id="username">User</span>
+      </div>
+
+      <div class="date" id="date"></div>
+
+      <div class="menuBtn" onclick="openSettings()">⋮</div>
+
+      <div class="stats pills-stats">
+        <div class="pill-card">
+          <span class="statIcon carIcon">🚗</span>
+          <span id="garageCount" class="counter">0</span>
+          <small>গাড়ি</small>
+        </div>
+
+        <div class="pill-card">
+          <span class="statIcon boxIcon">📦</span>
+          <span id="storeCount" class="counter">0</span>
+          <small>পণ্য</small>
+        </div>
+
+        <div class="pill-card">
+          <span class="statIcon busIcon">🚌</span>
+          <span id="busCount" class="counter">0</span>
+          <small>বাস</small>
+        </div>
+
+        <div class="pill-card">
+          <span class="statIcon truckIcon">🚚</span>
+          <span id="truckCount" class="counter">0</span>
+          <small>ট্রাক</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="modules">
+      <div class="card blue" onclick="openPage('garage.html')">
+        <div class="iconBox">🛠️</div>
+        <h2>GARAGE</h2>
+        <p>গ্যারেজ ম্যানেজমেন্ট</p>
+      </div>
+
+      <div class="card purple" onclick="openPage('store.html')">
+        <div class="iconBox">🏪</div>
+        <h2>STORE</h2>
+        <p>স্টোর ও পণ্য</p>
+      </div>
+
+      <div class="card teal" onclick="openPage('bus.html')">
+        <div class="iconBox">🚌</div>
+        <h2>BUS</h2>
+        <p>বাস সেকশন</p>
+      </div>
+
+      <div class="card red" onclick="openPage('truck.html')">
+        <div class="iconBox">🚚</div>
+        <h2>TRUCK</h2>
+        <p>ট্রাক সেকশন</p>
+      </div>
+
+      <div class="card orange small" onclick="openPage('notes.html')">
+        <div class="iconBox">📝</div>
+        <div class="textWrap">
+          <h2>NOTES</h2>
+          <p>নোট, টাস্ক</p>
+        </div>
+      </div>
+
+      <div class="card green small" onclick="openPage('hisab.html')">
+        <div class="iconBox">💰</div>
+        <div class="textWrap">
+          <h2>হিসাব</h2>
+          <p>আয়-ব্যয়</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="addMenu" class="addMenu">
+      <div onclick="openPage('garage.html')">🛠️ Garage</div>
+      <div onclick="openPage('store.html')">🏪 Store</div>
+      <div onclick="openPage('bus.html')">🚌 Bus</div>
+      <div onclick="openPage('truck.html')">🚚 Truck</div>
+      <div onclick="openPage('notes.html')">📝 Notes</div>
+      <div onclick="openPage('hisab.html')">💰 হিসাব</div>
+    </div>
+
+    <div class="bottomNav ultraNav">
+      <div class="bottomItem active" onclick="openPage('dashboard.html')">
+        <span>🏠</span>
+        <small>Home</small>
+      </div>
+
+      <div class="bottomItem" onclick="openPage('garage.html')">
+        <span>🛠️</span>
+        <small>Garage</small>
+      </div>
+
+      <div class="centerBtn" onclick="toggleAddMenu()">➕</div>
+
+      <div class="bottomItem" onclick="openPage('store.html')">
+        <span>🏪</span>
+        <small>Store</small>
+      </div>
+
+      <div class="bottomItem" onclick="openPage('bus.html')">
+        <span>🚌</span>
+        <small>Bus</small>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/theme.js"></script>
+  <script type="module" src="js/dashboard.js"></script>
+
+  <script>
+    let addMenuOpen = false;
+
+    function toggleAddMenu() {
+      const menu = document.getElementById("addMenu");
+      if (!menu) return;
+
+      addMenuOpen = !addMenuOpen;
+      menu.classList.toggle("show", addMenuOpen);
+    }
+
+    document.addEventListener("click", function (e) {
+      const menu = document.getElementById("addMenu");
+      const centerBtn = document.querySelector(".centerBtn");
+
+      if (!menu || !centerBtn) return;
+
+      if (!menu.contains(e.target) && !centerBtn.contains(e.target)) {
+        menu.classList.remove("show");
+        addMenuOpen = false;
+      }
+    });
+
+    window.toggleAddMenu = toggleAddMenu;
+  </script>
+</body>
+</html>

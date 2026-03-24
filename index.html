@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sheba Enterprise - Splash</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&family=Noto+Sans+Bengali:wght@400;500;700;800;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      -webkit-tap-highlight-color:transparent;
+    }
+
+    :root{
+      --gold-1:#fff8db;
+      --gold-2:#f7dd93;
+      --gold-3:#d1a13b;
+      --gold-4:#8d6518;
+      --gold-soft:rgba(247,221,147,.16);
+      --text:#fff7e7;
+      --muted:#cfba87;
+      --line:rgba(247,221,147,.18);
+      --line-strong:rgba(247,221,147,.36);
+      --glass:rgba(255,255,255,.04);
+      --shadow:0 24px 50px rgba(0,0,0,.42);
+    }
+
+    html,body{
+      width:100%;
+      height:100%;
+      overflow:hidden;
+      background:#000;
+      font-family:"Noto Sans Bengali","Inter",sans-serif;
+    }
+
+    body{
+      color:var(--text);
+      background:
+        radial-gradient(circle at 50% 12%, rgba(247,221,147,.16), transparent 18%),
+        radial-gradient(circle at 15% 82%, rgba(247,221,147,.08), transparent 18%),
+        radial-gradient(circle at 85% 30%, rgba(247,221,147,.06), transparent 16%),
+        linear-gradient(180deg, #020202 0%, #090909 38%, #020202 100%);
+    }
+
+    .splash{
+      position:relative;
+      width:100%;
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:26px 18px;
+      overflow:hidden;
+      isolation:isolate;
+    }
+
+    .noise,
+    .grid,
+    .vignette,
+    .beam,
+    .sparkle-layer{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+    }
+
+    .noise{
+      opacity:.08;
+      background-image:
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,.28) 0 1px, transparent 1px),
+        radial-gradient(circle at 70% 32%, rgba(255,255,255,.18) 0 1px, transparent 1px),
+        radial-gradient(circle at 40% 78%, rgba(255,255,255,.2) 0 1px, transparent 1px),
+        radial-gradient(circle at 86% 74%, rgba(255,255,255,.18) 0 1px, transparent 1px);
+      background-size:150px 150px,180px 180px,170px 170px,220px 220px;
+      animation:noiseMove 12s linear infinite;
+    }
+
+    .grid{
+      opacity:.06;
+      background:
+        linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+      background-size:34px 34px;
+      mask-image:radial-gradient(circle at center, rgba(0,0,0,1), transparent 82%);
+      -webkit-mask-image:radial-gradient(circle at center, rgba(0,0,0,1), transparent 82%);
+    }
+
+    .beam{
+      background:
+        radial-gradient(circle at 50% 18%, rgba(247,221,147,.20), transparent 24%),
+        linear-gradient(180deg, transparent 0%, rgba(247,221,147,.03) 26%, transparent 62%);
+      filter:blur(20px);
+      animation:beamPulse 4.5s ease-in-out infinite;
+    }
+
+    .vignette{
+      background:radial-gradient(circle at center, transparent 48%, rgba(0,0,0,.42) 78%, rgba(0,0,0,.88) 100%);
+    }
+
+    .sparkle-layer span{
+      position:absolute;
+      width:4px;
+      height:4px;
+      border-radius:50%;
+      background:radial-gradient(circle, #fff7dc, #d1a13b);
+      box-shadow:0 0 14px rgba(247,221,147,.45);
+      opacity:0;
+      animation:floatSpark 10s linear infinite;
+    }
+
+    .sparkle-layer span:nth-child(1){left:8%; bottom:-20px; animation-delay:0s;}
+    .sparkle-layer span:nth-child(2){left:18%; bottom:-30px; animation-delay:1s; width:5px; height:5px;}
+    .sparkle-layer span:nth-child(3){left:32%; bottom:-20px; animation-delay:2.1s;}
+    .sparkle-layer span:nth-child(4){left:46%; bottom:-28px; animation-delay:1.6s; width:3px; height:3px;}
+    .sparkle-layer span:nth-child(5){left:60%; bottom:-24px; animation-delay:2.8s;}
+    .sparkle-layer span:nth-child(6){left:74%; bottom:-22px; animation-delay:.8s; width:5px; height:5px;}
+    .sparkle-layer span:nth-child(7){left:87%; bottom:-30px; animation-delay:2.4s;}
+    .sparkle-layer span:nth-child(8){left:94%; bottom:-18px; animation-delay:1.3s; width:3px; height:3px;}
+
+    .corner{
+      position:absolute;
+      width:90px;
+      height:90px;
+      z-index:2;
+      pointer-events:none;
+    }
+
+    .corner.tl{
+      top:16px;
+      left:14px;
+      border-top:2px solid rgba(247,221,147,.28);
+      border-left:2px solid rgba(247,221,147,.28);
+      border-top-left-radius:24px;
+    }
+
+    .corner.tr{
+      top:16px;
+      right:14px;
+      border-top:2px solid rgba(247,221,147,.28);
+      border-right:2px solid rgba(247,221,147,.28);
+      border-top-right-radius:24px;
+    }
+
+    .corner.bl{
+      bottom:16px;
+      left:14px;
+      border-bottom:2px solid rgba(247,221,147,.28);
+      border-left:2px solid rgba(247,221,147,.28);
+      border-bottom-left-radius:24px;
+    }
+
+    .corner.br{
+      bottom:16px;
+      right:14px;
+      border-bottom:2px solid rgba(247,221,147,.28);
+      border-right:2px solid rgba(247,221,147,.28);
+      border-bottom-right-radius:24px;
+    }
+
+    .content{
+      position:relative;
+      z-index:3;
+      width:min(100%, 560px);
+      text-align:center;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+    }
+
+    .takbir-wrap{
+      margin-bottom:18px;
+      animation:takbirReveal 1.6s cubic-bezier(.18,.88,.2,1) both;
+    }
+
+    .takbir{
+      font-family:"Amiri",serif;
+      font-size:clamp(36px, 7vw, 58px);
+      line-height:1.2;
+      color:var(--gold-1);
+      text-shadow:
+        0 0 12px rgba(247,221,147,.20),
+        0 0 28px rgba(247,221,147,.10);
+      position:relative;
+      display:inline-block;
+      letter-spacing:.5px;
+    }
+
+    .takbir::after{
+      content:"";
+      position:absolute;
+      left:0;
+      bottom:-6px;
+      width:100%;
+      height:1px;
+      background:linear-gradient(90deg, transparent, rgba(247,221,147,.7), transparent);
+      box-shadow:0 0 10px rgba(247,221,147,.2);
+    }
+
+    .logo-wrap{
+      position:relative;
+      width:212px;
+      height:212px;
+      display:grid;
+      place-items:center;
+      margin-bottom:22px;
+      animation:logoDrop 1.7s cubic-bezier(.18,.92,.2,1) both .1s;
+    }
+
+    .ring{
+      position:absolute;
+      border-radius:50%;
+      border:1px solid rgba(247,221,147,.18);
+      box-shadow:0 0 24px rgba(247,221,147,.06);
+    }
+
+    .ring.r1{ width:212px; height:212px; animation:ringPulse 4s ease-in-out infinite; }
+    .ring.r2{ width:178px; height:178px; animation:ringPulse 4s ease-in-out infinite .35s; }
+    .ring.r3{ width:144px; height:144px; animation:ringPulse 4s ease-in-out infinite .7s; }
+
+    .logo-core{
+      position:relative;
+      width:112px;
+      height:112px;
+      border-radius:30px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.10), rgba(255,255,255,.02)),
+        linear-gradient(180deg, #241b0a 0%, #111111 52%, #060606 100%);
+      border:1px solid rgba(247,221,147,.42);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,.03) inset,
+        0 16px 34px rgba(0,0,0,.38),
+        0 0 24px rgba(247,221,147,.12);
+      overflow:hidden;
+      animation:logoGlow 3.2s ease-in-out infinite;
+    }
+
+    .logo-core::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.12), transparent 38%),
+        linear-gradient(315deg, rgba(247,221,147,.08), transparent 50%);
+    }
+
+    .logo-core::after{
+      content:"";
+      position:absolute;
+      left:-35%;
+      top:-40%;
+      width:65%;
+      height:180%;
+      transform:rotate(25deg);
+      background:linear-gradient(180deg, transparent, rgba(255,255,255,.16), transparent);
+      animation:glassSweep 3.8s ease-in-out infinite;
+      opacity:.75;
+    }
+
+    .logo-text{
+      position:relative;
+      z-index:2;
+      font-size:48px;
+      font-weight:900;
+      letter-spacing:1px;
+      background:linear-gradient(180deg, #fffbe9 0%, #f7dd93 56%, #c68e26 100%);
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+    }
+
+    .info-box{
+      position:relative;
+      width:min(100%, 490px);
+      padding:22px 18px 18px;
+      border-radius:28px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.015)),
+        rgba(9,9,9,.56);
+      border:1px solid rgba(247,221,147,.17);
+      box-shadow:
+        var(--shadow),
+        inset 0 1px 0 rgba(255,255,255,.04),
+        0 0 26px rgba(247,221,147,.05);
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
+      overflow:hidden;
+      animation:boxRise 1.8s cubic-bezier(.2,.88,.2,1) both .3s;
+    }
+
+    .info-box::before{
+      content:"";
+      position:absolute;
+      top:0;
+      left:16px;
+      right:16px;
+      height:1px;
+      background:linear-gradient(90deg, transparent, rgba(247,221,147,.7), transparent);
+    }
+
+    .info-box::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      border-radius:28px;
+      padding:1px;
+      background:linear-gradient(145deg, rgba(247,221,147,.24), transparent 34%, transparent 74%, rgba(255,255,255,.06));
+      -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+      -webkit-mask-composite:xor;
+              mask-composite:exclude;
+      pointer-events:none;
+    }
+
+    .brand{
+      font-size:clamp(30px, 6vw, 46px);
+      line-height:1.08;
+      font-weight:900;
+      letter-spacing:.4px;
+      margin-bottom:16px;
+      background:linear-gradient(180deg, #fffbe9 0%, #f7dd93 58%, #c68e26 100%);
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      text-shadow:0 0 18px rgba(247,221,147,.06);
+    }
+
+    .divider{
+      width:130px;
+      height:2px;
+      margin:0 auto 16px;
+      border-radius:999px;
+      background:linear-gradient(90deg, transparent, rgba(247,221,147,.85), transparent);
+      box-shadow:0 0 12px rgba(247,221,147,.14);
+    }
+
+    .ayah{
+      font-family:"Amiri",serif;
+      font-size:clamp(22px, 4vw, 33px);
+      line-height:1.8;
+      color:#fff3ca;
+      text-shadow:
+        0 0 12px rgba(247,221,147,.08),
+        0 0 24px rgba(247,221,147,.04);
+      animation:ayahReveal 2s ease both .75s;
+    }
+
+    .ayah-ref{
+      margin-top:8px;
+      font-size:13px;
+      color:var(--muted);
+      letter-spacing:.4px;
+      animation:fadeUp 1.8s ease both .95s;
+    }
+
+    .loader-wrap{
+      margin-top:18px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:10px;
+      animation:fadeUp 2s ease both 1.05s;
+    }
+
+    .loader{
+      position:relative;
+      width:min(88vw, 320px);
+      height:9px;
+      border-radius:999px;
+      overflow:hidden;
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(247,221,147,.12);
+      box-shadow:inset 0 0 12px rgba(0,0,0,.3);
+    }
+
+    .loader::before{
+      content:"";
+      position:absolute;
+      left:-38%;
+      top:0;
+      width:38%;
+      height:100%;
+      border-radius:999px;
+      background:linear-gradient(90deg, transparent, #fff7d0, #f7dd93, #c99227);
+      box-shadow:0 0 18px rgba(247,221,147,.30);
+      animation:loading 2.3s ease-in-out infinite;
+    }
+
+    .loading-text{
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:2px;
+      color:#d6c18e;
+    }
+
+    @keyframes fadeUp{
+      0%{opacity:0; transform:translateY(16px);}
+      100%{opacity:1; transform:translateY(0);}
+    }
+
+    @keyframes takbirReveal{
+      0%{opacity:0; transform:translateY(-18px) scale(.96);}
+      100%{opacity:1; transform:translateY(0) scale(1);}
+    }
+
+    @keyframes logoDrop{
+      0%{opacity:0; transform:translateY(-30px) scale(.84);}
+      70%{opacity:1; transform:translateY(6px) scale(1.04);}
+      100%{opacity:1; transform:translateY(0) scale(1);}
+    }
+
+    @keyframes boxRise{
+      0%{opacity:0; transform:translateY(22px) scale(.97);}
+      100%{opacity:1; transform:translateY(0) scale(1);}
+    }
+
+    @keyframes ayahReveal{
+      0%{
+        opacity:0;
+        transform:translateY(16px);
+        filter:blur(8px);
+      }
+      100%{
+        opacity:1;
+        transform:translateY(0);
+        filter:blur(0);
+      }
+    }
+
+    @keyframes ringPulse{
+      0%,100%{transform:scale(1); opacity:.55;}
+      50%{transform:scale(1.06); opacity:.92;}
+    }
+
+    @keyframes logoGlow{
+      0%,100%{
+        box-shadow:
+          0 0 0 1px rgba(255,255,255,.03) inset,
+          0 16px 34px rgba(0,0,0,.38),
+          0 0 24px rgba(247,221,147,.10);
+      }
+      50%{
+        box-shadow:
+          0 0 0 1px rgba(255,255,255,.04) inset,
+          0 18px 38px rgba(0,0,0,.42),
+          0 0 34px rgba(247,221,147,.18),
+          0 0 54px rgba(247,221,147,.08);
+      }
+    }
+
+    @keyframes glassSweep{
+      0%{transform:translateX(-130%) rotate(25deg); opacity:0;}
+      20%{opacity:.45;}
+      48%{transform:translateX(160%) rotate(25deg); opacity:.68;}
+      100%{transform:translateX(160%) rotate(25deg); opacity:0;}
+    }
+
+    @keyframes loading{
+      0%{left:-38%;}
+      100%{left:100%;}
+    }
+
+    @keyframes floatSpark{
+      0%{transform:translateY(0) scale(.6); opacity:0;}
+      12%{opacity:.9;}
+      100%{transform:translateY(-110vh) scale(1.08); opacity:0;}
+    }
+
+    @keyframes noiseMove{
+      0%{transform:translate3d(0,0,0);}
+      50%{transform:translate3d(-8px,6px,0);}
+      100%{transform:translate3d(0,0,0);}
+    }
+
+    @keyframes beamPulse{
+      0%,100%{opacity:.72; transform:scale(1);}
+      50%{opacity:1; transform:scale(1.05);}
+    }
+
+    @media (max-width:540px){
+      .logo-wrap{
+        width:184px;
+        height:184px;
+        margin-bottom:18px;
+      }
+
+      .ring.r1{ width:184px; height:184px; }
+      .ring.r2{ width:154px; height:154px; }
+      .ring.r3{ width:124px; height:124px; }
+
+      .logo-core{
+        width:98px;
+        height:98px;
+        border-radius:28px;
+      }
+
+      .logo-text{
+        font-size:40px;
+      }
+
+      .info-box{
+        border-radius:22px;
+        padding:18px 14px 16px;
+      }
+
+      .corner{
+        width:66px;
+        height:66px;
+      }
+    }
+  </style>
+  
+  
+  <link rel="manifest" href="./manifest.json">
+  
+  
+  
+  
+</head>
+<body>
+  <div class="splash">
+    <div class="noise"></div>
+    <div class="grid"></div>
+    <div class="beam"></div>
+    <div class="vignette"></div>
+
+    <div class="sparkle-layer">
+      <span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span>
+    </div>
+
+    <div class="corner tl"></div>
+    <div class="corner tr"></div>
+    <div class="corner bl"></div>
+    <div class="corner br"></div>
+
+    <div class="content">
+      <div class="takbir-wrap">
+        <div class="takbir">اللّٰهُ أَكْبَرُ</div>
+      </div>
+
+      <div class="logo-wrap">
+        <div class="ring r1"></div>
+        <div class="ring r2"></div>
+        <div class="ring r3"></div>
+
+        <div class="logo-core">
+          <div class="logo-text">SE</div>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <div class="brand">Sheba Enterprise</div>
+        <div class="divider"></div>
+        <div class="ayah">وَأَحَلَّ اللَّهُ الْبَيْعَ وَحَرَّمَ الرِّبَا</div>
+        <div class="ayah-ref">সুরা আল-বাকারাহ • ২:২৭৫</div>
+      </div>
+
+      <div class="loader-wrap">
+        <div class="loader"></div>
+        <div class="loading-text">Loading Premium Experience</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { supabase } from "./js/supabase-client.js";
+
+    setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+
+        if (error) {
+          window.location.href = "login.html";
+          return;
+        }
+
+        if (data?.session?.user) {
+          window.location.href = "dashboard.html";
+        } else {
+          window.location.href = "login.html";
+        }
+      } catch (err) {
+        window.location.href = "login.html";
+      }
+    }, 3500);
+  </script>
+  
+  
+  
+  
+  
+  
+  
+  <script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("./service-worker.js")
+        .then(function () {
+          console.log("Service Worker registered");
+        })
+        .catch(function (error) {
+          console.log("Service Worker registration failed:", error);
+        });
+    });
+  }
+</script>
+  
+  
+  
+  
+  
+  
+</body>
+</html>

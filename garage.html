@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sheba Enterprise - Garage</title>
+
+  <script>
+    (function () {
+      const savedTheme = localStorage.getItem("appTheme") || "light";
+      document.documentElement.classList.toggle("dark", savedTheme === "dark");
+    })();
+  </script>
+
+  <link rel="stylesheet" href="css/garage.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+</head>
+
+<body class="garage-page">
+
+  <div class="floating-particles" aria-hidden="true">
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+
+  <!-- =========================
+       DASHBOARD PAGE
+  ========================== -->
+  <section id="garageDashboardPage">
+    <header class="garage-header">
+      <div class="garage-topbar">
+        <button class="garage-icon-btn" onclick="goDashboard()">←</button>
+
+        <div class="garage-title-wrap">
+          <h1 class="garage-title">GARAGE</h1>
+        </div>
+
+        <button class="garage-icon-btn" onclick="openCarModal()">＋</button>
+      </div>
+
+      <div class="garage-summary-row">
+        <div class="garage-summary-card premium-card">
+          <span>মোট আয়</span>
+          <strong id="garageTotalIncome">৳0</strong>
+        </div>
+
+        <div class="garage-summary-card premium-card">
+          <span>মোট ব্যয়</span>
+          <strong id="garageTotalExpense">৳0</strong>
+        </div>
+
+        <div class="garage-summary-card premium-card profit-card">
+          <span>লাভ / ক্ষতি</span>
+          <strong id="garageTotalProfit">৳0</strong>
+        </div>
+      </div>
+    </header>
+
+    <div class="garage-wrap">
+      <div class="garage-action-grid">
+        <button class="garage-action-btn income-btn" onclick="openGarageIncomePage()">
+          <div class="garage-action-icon">💰</div>
+          <div class="garage-action-text">Income</div>
+        </button>
+
+        <button class="garage-action-btn expense-btn" onclick="openGarageExpensePage()">
+          <div class="garage-action-icon">🧾</div>
+          <div class="garage-action-text">Expense</div>
+        </button>
+
+        <button class="garage-action-btn employee-btn" onclick="openGarageEmployeePage()">
+          <div class="garage-action-icon">👨‍🔧</div>
+          <div class="garage-action-text">Employee</div>
+        </button>
+
+        <button class="garage-action-btn report-btn-ui" onclick="openGarageReportPage()">
+          <div class="garage-action-icon">📊</div>
+          <div class="garage-action-text">Report</div>
+        </button>
+
+        <button class="garage-action-btn backup-btn-ui" onclick="exportGarageBackup()">
+          <div class="garage-action-icon">⬇</div>
+          <div class="garage-action-text">Backup</div>
+        </button>
+
+        <button class="garage-action-btn restore-btn-ui" onclick="openRestoreModal()">
+          <div class="garage-action-icon">⬆</div>
+          <div class="garage-action-text">Restore</div>
+        </button>
+      </div>
+
+      <div class="garage-card premium-card">
+        <div class="garage-card-head">
+          <h2 class="garage-section-title">গাড়ির তালিকা</h2>
+          <button class="garage-link-btn" onclick="openCarModal()">+ Add Car</button>
+        </div>
+
+        <input
+          id="garageCarSearch"
+          class="garage-search"
+          type="text"
+          placeholder="গাড়ি / কাস্টমার / মোবাইল দিয়ে খুঁজুন"
+          oninput="renderGarageCarList()"
+        />
+
+        <div id="garageCarList" class="garage-list"></div>
+
+        <div id="garageNoCarState" class="garage-empty-state hidden">
+          <div class="garage-empty-icon">🚗</div>
+          <h3>কোনো গাড়ি নেই</h3>
+          <p>প্রথমে একটি গাড়ি যোগ করুন</p>
+        </div>
+      </div>
+
+      <div class="garage-card premium-card">
+        <div class="garage-card-head">
+          <h2 class="garage-section-title">সাম্প্রতিক আয়</h2>
+          <button class="garage-link-btn" onclick="openGarageIncomePage()">সব দেখুন</button>
+        </div>
+
+        <div id="recentGarageIncomeList" class="garage-mini-list"></div>
+
+        <div id="garageNoRecentIncome" class="garage-empty-state small hidden">
+          <div class="garage-empty-icon">💰</div>
+          <p>এখনও কোনো আয় নেই</p>
+        </div>
+      </div>
+
+      <div class="garage-card premium-card">
+        <div class="garage-card-head">
+          <h2 class="garage-section-title">Risk / Alert</h2>
+        </div>
+
+        <div id="garageRiskList" class="garage-record-list"></div>
+
+        <div id="garageNoRiskState" class="garage-empty-state small hidden">
+          <div class="garage-empty-icon">✅</div>
+          <p>এই মুহূর্তে কোনো risk নেই</p>
+        </div>
+      </div>
+
+      <div class="garage-card premium-card">
+        <div class="garage-card-head">
+          <h2 class="garage-section-title">মাসিক চার্ট</h2>
+        </div>
+
+        <div class="garage-chart-wrap">
+          <canvas id="garageProfitChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================
+       INCOME PAGE
+  ========================== -->
+  <section id="garageIncomePage" class="garage-sub-page hidden">
+    <div class="garage-sub-header">
+      <button class="garage-icon-btn" onclick="backToGarageHome()">←</button>
+      <div class="garage-sub-title">Garage Income</div>
+      <div class="garage-sub-right">
+        <button class="garage-add-btn income-add" onclick="openIncomeModal()">＋</button>
+      </div>
+    </div>
+
+    <div class="garage-sub-wrap">
+      <div class="garage-banner income-banner">
+        <span>আজকের আয়</span>
+        <strong id="garageTodayIncome">৳0</strong>
+      </div>
+
+      <div id="garageIncomeList" class="garage-record-list"></div>
+
+      <div id="garageNoIncomeState" class="garage-empty-state hidden">
+        <div class="garage-empty-icon">📄</div>
+        <h3>কোনো আয় নেই</h3>
+        <p>নতুন service / income যোগ করুন</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================
+       EXPENSE PAGE
+  ========================== -->
+  <section id="garageExpensePage" class="garage-sub-page hidden">
+    <div class="garage-sub-header">
+      <button class="garage-icon-btn" onclick="backToGarageHome()">←</button>
+      <div class="garage-sub-title">Garage Expense</div>
+      <div class="garage-sub-right">
+        <button class="garage-add-btn expense-add" onclick="openExpenseModal()">＋</button>
+      </div>
+    </div>
+
+    <div class="garage-sub-wrap">
+      <div class="garage-banner expense-banner">
+        <span>মোট ব্যয়</span>
+        <strong id="garageExpenseTotalPage">৳0</strong>
+      </div>
+
+      <div class="garage-filter-row">
+        <button class="garage-chip active" onclick="filterGarageExpense('all', this)">সব</button>
+        <button class="garage-chip" onclick="filterGarageExpense('কর্মচারী বেতন', this)">কর্মচারী বেতন</button>
+        <button class="garage-chip" onclick="filterGarageExpense('বিদ্যুৎ বিল', this)">বিদ্যুৎ বিল</button>
+        <button class="garage-chip" onclick="filterGarageExpense('খাওয়ার খরচ', this)">খাওয়ার খরচ</button>
+        <button class="garage-chip" onclick="filterGarageExpense('জায়গা ভাড়া', this)">জায়গা ভাড়া</button>
+        <button class="garage-chip" onclick="filterGarageExpense('অন্যান্য', this)">অন্যান্য</button>
+      </div>
+
+      <div id="garageExpenseList" class="garage-record-list"></div>
+
+      <div id="garageNoExpenseState" class="garage-empty-state hidden">
+        <div class="garage-empty-icon">🧾</div>
+        <h3>কোনো ব্যয় নেই</h3>
+        <p>একটি নতুন expense যোগ করুন</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================
+       EMPLOYEE PAGE
+  ========================== -->
+  <section id="garageEmployeePage" class="garage-sub-page hidden">
+    <div class="garage-sub-header">
+      <button class="garage-icon-btn" onclick="backToGarageHome()">←</button>
+      <div class="garage-sub-title">Employee</div>
+      <div class="garage-sub-right">
+        <button class="garage-icon-btn" onclick="openAttendanceModal()">🗓</button>
+        <button class="garage-add-btn employee-add" onclick="openEmployeeModal()">＋</button>
+      </div>
+    </div>
+
+    <div class="garage-sub-wrap">
+      <div class="garage-banner employee-banner">
+        <span id="garageEmployeeCount">0</span>
+        <strong id="garageTotalSalary">মোট বেতন: ৳0</strong>
+      </div>
+
+      <div id="garageEmployeeList" class="garage-record-list"></div>
+
+      <div id="garageNoEmployeeState" class="garage-empty-state hidden">
+        <div class="garage-empty-icon">👨‍🔧</div>
+        <h3>কোনো কর্মচারী নেই</h3>
+        <p>প্রথমে একজন কর্মচারী যোগ করুন</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================
+       REPORT PAGE
+  ========================== -->
+  <section id="garageReportPage" class="garage-sub-page hidden">
+    <div class="garage-sub-header">
+      <button class="garage-icon-btn" onclick="backToGarageHome()">←</button>
+      <div class="garage-sub-title">Garage Report</div>
+      <div class="garage-sub-right">
+        <button class="garage-icon-btn" onclick="printReportSummary()">🖨</button>
+      </div>
+    </div>
+
+    <div class="garage-sub-wrap">
+      <div class="premium-card garage-card">
+        <select id="garageReportMode" class="garage-search" onchange="handleGarageReportModeChange()">
+          <option value="today">আজকের রিপোর্ট</option>
+          <option value="singleDate">একদিনের রিপোর্ট</option>
+          <option value="monthYear">মাস / বছর</option>
+          <option value="yearOnly">শুধু বছর</option>
+          <option value="dateRange">Date Range</option>
+        </select>
+
+        <div id="garageReportDynamicFields"></div>
+
+        <div class="garage-detail-grid">
+          <div class="garage-report-box premium-card">
+            <span>মোট আয়</span>
+            <strong id="reportTotalIncome">৳0</strong>
+          </div>
+
+          <div class="garage-report-box premium-card">
+            <span>মোট ব্যয়</span>
+            <strong id="reportTotalExpense">৳0</strong>
+          </div>
+
+          <div class="garage-report-box premium-card">
+            <span>লাভ / ক্ষতি</span>
+            <strong id="reportTotalProfit">৳0</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="garage-card premium-card">
+        <div class="garage-card-head">
+          <h2 class="garage-section-title">Pending Due List</h2>
+        </div>
+
+        <div id="garagePendingList" class="garage-record-list"></div>
+
+        <div id="garageNoPendingState" class="garage-empty-state hidden">
+          <div class="garage-empty-icon">✅</div>
+          <p>কোনো pending due নেই</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================
+       CAR DETAIL PAGE
+  ========================== -->
+  <section id="garageCarDetailPage" class="garage-sub-page hidden">
+    <div class="garage-sub-header">
+      <button class="garage-icon-btn" onclick="backToGarageHome()">←</button>
+      <div id="garageCarDetailTitle" class="garage-sub-title">গাড়ির ডিটেইলস</div>
+      <div class="garage-sub-right">
+        <button class="garage-icon-btn" onclick="openInvoiceModal()">🧾</button>
+      </div>
+    </div>
+
+    <div class="garage-sub-wrap">
+      <div class="garage-detail-grid">
+        <div class="garage-report-box premium-card">
+          <span>মোট কাজ</span>
+          <strong id="carDetailJobs">0</strong>
+        </div>
+
+        <div class="garage-report-box premium-card">
+          <span>মোট Paid</span>
+          <strong id="carDetailIncome">৳0</strong>
+        </div>
+
+        <div class="garage-report-box premium-card">
+          <span>মোট Due</span>
+          <strong id="carDetailDue">৳0</strong>
+        </div>
+      </div>
+
+      <div id="garageCarServiceHistory" class="garage-record-list"></div>
+
+      <div id="garageCarNoHistory" class="garage-empty-state hidden">
+        <div class="garage-empty-icon">📂</div>
+        <p>এই গাড়ির কোনো history নেই</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================
+       CAR MODAL
+  ========================== -->
+  <div id="garageCarModal" class="sheet-overlay">
+    <div class="sheet">
+      <div class="sheet-title">Add / Edit Car</div>
+
+      <div class="sheet-field">
+        <label>গাড়ির নম্বর</label>
+        <input id="garageCarNumber" type="text" placeholder="যেমন: ঢাকা মেট্রো-গ ১২-৩৪৫৬" />
+      </div>
+
+      <div class="sheet-field">
+        <label>কাস্টমারের নাম</label>
+        <input id="garageCarCustomer" type="text" placeholder="কাস্টমারের নাম" />
+      </div>
+
+      <div class="sheet-field">
+        <label>মোবাইল</label>
+        <input id="garageCarPhone" type="text" placeholder="মোবাইল নম্বর" />
+      </div>
+
+      <div class="sheet-field">
+        <label>ঠিকানা</label>
+        <textarea id="garageCarAddress" placeholder="ঠিকানা লিখুন"></textarea>
+      </div>
+
+      <div class="sheet-actions">
+        <button class="sheet-cancel" onclick="closeCarModal()">Cancel</button>
+        <button class="sheet-save save-blue" onclick="saveGarageCar()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================
+       INCOME MODAL
+  ========================== -->
+  <div id="garageIncomeModal" class="sheet-overlay">
+    <div class="sheet">
+      <div class="sheet-title">Add / Edit Service</div>
+
+      <div class="sheet-field">
+        <label>তারিখ</label>
+        <input id="garageIncomeDate" type="date" />
+      </div>
+
+      <div class="sheet-field">
+        <label>গাড়ি</label>
+        <select id="garageIncomeCar"></select>
+      </div>
+
+      <div class="sheet-field">
+        <label>কাজের ধরন</label>
+        <input id="garageIncomeType" type="text" placeholder="যেমন: ইঞ্জিন, ওয়েল, ব্রেক" />
+      </div>
+
+      <div class="sheet-field">
+        <label>মোট বিল</label>
+        <input id="garageIncomeAmount" type="number" placeholder="মোট বিল" />
+      </div>
+
+      <div class="sheet-field">
+        <label>Paid Amount</label>
+        <input id="garageIncomePaid" type="number" placeholder="Paid amount" />
+      </div>
+
+      <div class="sheet-field">
+        <label>Due</label>
+        <input id="garageIncomeDue" type="number" placeholder="Due" readonly />
+      </div>
+
+      <div class="sheet-field">
+        <label>Due Date</label>
+        <input id="garageIncomeDueDate" type="date" />
+      </div>
+
+      <div class="sheet-field">
+        <label>Payment Method</label>
+        <select id="garageIncomeMethod" onchange="toggleGarageIncomeSplit()">
+          <option value="Cash">Cash</option>
+          <option value="bKash">bKash</option>
+          <option value="Nagad">Nagad</option>
+          <option value="Rocket">Rocket</option>
+          <option value="Upay">Upay</option>
+          <option value="Bank">Bank</option>
+          <option value="Card">Card</option>
+          <option value="Mixed">Mixed</option>
+        </select>
+      </div>
+
+      <div id="garageIncomeSplitWrap" class="sheet-field hidden">
+        <label>Mixed Split</label>
+        <div class="split-grid">
+          <div class="sheet-field"><input id="garageIncomeSplitCash" type="number" placeholder="Cash amount" /></div>
+          <div class="sheet-field"><input id="garageIncomeSplitBkash" type="number" placeholder="bKash amount" /></div>
+          <div class="sheet-field"><input id="garageIncomeSplitNagad" type="number" placeholder="Nagad amount" /></div>
+          <div class="sheet-field"><input id="garageIncomeSplitRocket" type="number" placeholder="Rocket amount" /></div>
+          <div class="sheet-field"><input id="garageIncomeSplitUpay" type="number" placeholder="Upay amount" /></div>
+          <div class="sheet-field"><input id="garageIncomeSplitBank" type="number" placeholder="Bank amount" /></div>
+          <div class="sheet-field"><input id="garageIncomeSplitCard" type="number" placeholder="Card amount" /></div>
+        </div>
+      </div>
+
+      <div class="sheet-field">
+        <label>Details</label>
+        <textarea id="garageIncomeNote" placeholder="বিস্তারিত লিখুন"></textarea>
+      </div>
+
+      <div class="sheet-actions">
+        <button class="sheet-cancel" onclick="closeIncomeModal()">Cancel</button>
+        <button class="sheet-save save-green" onclick="saveGarageIncome()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================
+       DUE PAYMENT MODAL
+  ========================== -->
+  <div id="garageDuePaymentModal" class="sheet-overlay">
+    <div class="sheet">
+      <div class="sheet-title">Due Payment</div>
+
+      <div class="sheet-field">
+        <label>Current Due</label>
+        <input id="garageDueCurrent" type="number" readonly />
+      </div>
+
+      <div class="sheet-field">
+        <label>পরিশোধের পরিমাণ</label>
+        <input id="garageDuePayAmount" type="number" placeholder="কত টাকা দিল" />
+      </div>
+
+      <div class="sheet-field">
+        <label>তারিখ</label>
+        <input id="garageDuePayDate" type="date" />
+      </div>
+
+      <div class="sheet-field">
+        <label>Payment Method</label>
+        <select id="garageDuePayMethod" onchange="toggleGarageDueSplit()">
+          <option value="Cash">Cash</option>
+          <option value="bKash">bKash</option>
+          <option value="Nagad">Nagad</option>
+          <option value="Rocket">Rocket</option>
+          <option value="Upay">Upay</option>
+          <option value="Bank">Bank</option>
+          <option value="Card">Card</option>
+          <option value="Mixed">Mixed</option>
+        </select>
+      </div>
+
+      <div id="garageDueSplitWrap" class="sheet-field hidden">
+        <label>Mixed Split</label>
+        <div class="split-grid">
+          <div class="sheet-field"><input id="garageDueSplitCash" type="number" placeholder="Cash amount" /></div>
+          <div class="sheet-field"><input id="garageDueSplitBkash" type="number" placeholder="bKash amount" /></div>
+          <div class="sheet-field"><input id="garageDueSplitNagad" type="number" placeholder="Nagad amount" /></div>
+          <div class="sheet-field"><input id="garageDueSplitRocket" type="number" placeholder="Rocket amount" /></div>
+          <div class="sheet-field"><input id="garageDueSplitUpay" type="number" placeholder="Upay amount" /></div>
+          <div class="sheet-field"><input id="garageDueSplitBank" type="number" placeholder="Bank amount" /></div>
+          <div class="sheet-field"><input id="garageDueSplitCard" type="number" placeholder="Card amount" /></div>
+        </div>
+      </div>
+
+      <div class="sheet-actions">
+        <button class="sheet-cancel" onclick="closeDuePaymentModal()">Cancel</button>
+        <button class="sheet-save save-green" onclick="saveDuePayment()">Pay</button>
+        <button class="sheet-save save-blue" onclick="markGarageFullPaid()">Full Paid</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================
+       EXPENSE MODAL
+  ========================== -->
+  <div id="garageExpenseModal" class="sheet-overlay">
+    <div class="sheet">
+      <div class="sheet-title">Add / Edit Expense</div>
+
+      <div class="sheet-field">
+        <label>তারিখ</label>
+        <input id="garageExpenseDate" type="date" />
+      </div>
+
+      <div class="garage-filter-grid">
+        <button class="expense-select-chip" onclick="selectExpenseCategory('কর্মচারী বেতন', this)">কর্মচারী বেতন</button>
+        <button class="expense-select-chip" onclick="selectExpenseCategory('বিদ্যুৎ বিল', this)">বিদ্যুৎ বিল</button>
+        <button class="expense-select-chip" onclick="selectExpenseCategory('খাওয়ার খরচ', this)">খাওয়ার খরচ</button>
+        <button class="expense-select-chip" onclick="selectExpenseCategory('জায়গা ভাড়া', this)">জায়গা ভাড়া</button>
+        <button class="expense-select-chip" onclick="selectExpenseCategory('অন্যান্য', this)">অন্যান্য</button>
+      </div>
+
+      <div id="garageExpenseEmployeeWrap" class="sheet-field hidden" style="display:none;">
+        <label>কর্মচারী</label>
+        <select id="garageExpenseEmployee"></select>
+      </div>
+
+      <div class="sheet-field">
+        <label>বর্ণনা</label>
+        <textarea id="garageExpenseNote" placeholder="বর্ণনা লিখুন"></textarea>
+      </div>
+
+      <div class="sheet-field">
+        <label>পরিমাণ</label>
+        <input id="garageExpenseAmount" type="number" placeholder="পরিমাণ" />
+      </div>
+
+      <div class="sheet-field">
+        <label>Payment Method</label>
+        <select id="garageExpenseMethod" onchange="toggleGarageExpenseSplit()">
+          <option value="Cash">Cash</option>
+          <option value="bKash">bKash</option>
+          <option value="Nagad">Nagad</option>
+          <option value="Rocket">Rocket</option>
+          <option value="Upay">Upay</option>
+          <option value="Bank">Bank</option>
+          <option value="Card">Card</option>
+          <option value="Mixed">Mixed</option>
+        </select>
+      </div>
+
+      <div id="garageExpenseSplitWrap" class="sheet-field hidden">
+        <label>Mixed Split</label>
+        <div class="split-grid">
+          <div class="sheet-field"><input id="garageExpenseSplitCash" type="number" placeholder="Cash amount" /></div>
+          <div class="sheet-field"><input id="garageExpenseSplitBkash" type="number" placeholder="bKash amount" /></div>
+          <div class="sheet-field"><input id="garageExpenseSplitNagad" type="number" placeholder="Nagad amount" /></div>
+          <div class="sheet-field"><input id="garageExpenseSplitRocket" type="number" placeholder="Rocket amount" /></div>
+          <div class="sheet-field"><input id="garageExpenseSplitUpay" type="number" placeholder="Upay amount" /></div>
+          <div class="sheet-field"><input id="garageExpenseSplitBank" type="number" placeholder="Bank amount" /></div>
+          <div class="sheet-field"><input id="garageExpenseSplitCard" type="number" placeholder="Card amount" /></div>
+        </div>
+      </div>
+
+      <div class="sheet-actions">
+        <button class="sheet-cancel" onclick="closeExpenseModal()">Cancel</button>
+        <button class="sheet-save save-red" onclick="saveGarageExpense()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================
+       EMPLOYEE MODAL
+  ========================== -->
+  <div id="garageEmployeeModal" class="sheet-overlay">
+    <div class="sheet">
+      <div class="sheet-title">Add / Edit Employee</div>
+
+      <div class="sheet-field">
+        <label>নাম</label>
+        <input id="garageEmployeeName" type="text" placeholder="নাম" />
+      </div>
+
+      <div class="sheet-field">
+        <label>পদবি</label>
+        <input id="garageEmployeePost" type="text" placeholder="পদবি" />
+      </div>
+
+      <div class="sheet-field">
+        <label>মোবাইল</label>
+        <input id="garageEmployeePhone" type="text" placeholder="মোবাইল" />
+      </div>
+
+      <div class="sheet-field">
+        <label>মাসিক বেতন</label>
+        <input id="garageEmployeeSalary" type="number" placeholder="মাসিক বেতন" />
+      </div>
+
+      <div class="sheet-actions">
+        <button class="sheet-cancel" onclick="closeEmployeeModal()">Cancel</button>
+        <button class="sheet-save save-blue" onclick="saveGarageEmployee()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================
+       SALARY PAYMENT MODAL
+  ========================== -->
+  <div id="garageSalaryPaymentModal" class="sheet-overlay">
+    <div class="sheet">
+      <div class="sheet-title">Salary Payment</div>
+
+      <div class="sheet-field">
+        <label>কর্মচারী</label>
+        <input id="garageSalaryEmployeeName" type="text" readonly />
+      </div>
+
+      <div class="sheet-field">
+        <label>বর্তমান বাকি</label>
+        <input id="garageSalaryCurrentDue" type="number" readonly />
+      </div>
+
+      <div class="sheet-field">
+        <label>পরিশোধের পরিমাণ</label>
+        <input id="garageSalaryPayAmount" type="number" placeholder="কত টাকা দিল" />
+      </div>
+
+      <div class="sheet-field">
+        <label>তারিখ</label>
+        <input id="garageSalaryPayDate" type="date" />
+      </div>
+
+      <div class="sheet-field">
+        <label>Payment Method</label>
+        <select id="garageSalaryPayMethod" onchange="toggleGarageSalarySplit()">
+          <option value="Cash">Cash</option>
+          <option value="bKash">bKash</option>
+          <option value="Nagad">Nagad</option>
+          <option value="Rocket">Rocket</option>
+          <option value="Upay">Upay</option>
+          <option value="Bank">Bank</option>
+          <option value="Card">Card</option>
+          <option value="Mixed">Mixed</option>
+        </select>
+      </div>
+
+      <div id="garageSalarySplitWrap" class="sheet-field hidden">
+        <label>Mixed Split</label>
+        <div class="split-grid">
+          <div class="sheet-field"><input id="garageSalarySplitCash" type="number" placeholder="Cash amount" /></div>
+          <div class="sheet-field"><input id="garageSalarySplitBkash" type="number" placeholder="bKash amount" /></div>
+          <div class="sheet-field"><input id="garageSalarySplitNagad" type="number" placeholder="Nagad amount" /></div>
+          <div class="sheet-field"><input id="garageSalarySplitRocket" type="number" placeholder="Rocket amount" /></div>
+          <div class="sheet-field"><input id="garageSalarySplitUpay" type="number" placeholder="Upay amount" /></div>
+          <div class="sheet-field"><input id="garageSalarySplitBank" type="number" placeholder="Bank amount" /></div>
+          <div class="sheet-field"><input id="garageSalarySplitCard" type="number" placeholder="Card amount" /></div>
+        </div>
+      </div>
+
+      <div class="sheet-actions">
+        <button class="sheet-cancel" onclick="closeSalaryPaymentModal()">Cancel</button>
+        <button class="sheet-save save-green" onclick="saveSalaryPayment()">Pay</button>
+        <button class="sheet-save save-blue" onclick="markSalaryFullPaid()">Full Paid</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================
+       ATTENDANCE MODAL
+  ========================== -->
+  <div id="garageAttendanceModal" class="sheet-overlay">
+    <div class="sheet">
+      <div class="sheet-title">Attendance</div>
+
+      <div class="sheet-field">
+        <label>কর্মচারী</label>
+        <select id="garageAttendanceEmployee"></select>
+      </div>
+
+      <div class="sheet-field">
+        <label>তারিখ</label>
+        <input id="garageAttendanceDate" type="date" />
+      </div>
+
+      <div class="sheet-field">
+        <label>Status</label>
+        <select id="garageAttendanceStatus">
+          <option value="Present">Present</option>
+          <option value="Absent">Absent</option>
+          <option value="Half-day">Half-day</option>
+          <option value="Overtime">Overtime</option>
+        </select>
+      </div>
+
+      <div class="sheet-actions">
+        <button class="sheet-cancel" onclick="closeAttendanceModal()">Cancel</button>
+        <button class="sheet-save save-blue" onclick="saveAttendance()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================
+       RESTORE MODAL
+  ========================== -->
+  <div id="garageRestoreModal" class="sheet-overlay">
+    <div class="sheet">
+      <div class="sheet-title">Restore Backup</div>
+
+      <div class="sheet-field">
+        <label>Backup File</label>
+        <input id="garageRestoreFile" type="file" accept=".json,application/json" />
+      </div>
+
+      <div class="sheet-actions">
+        <button class="sheet-cancel" onclick="closeRestoreModal()">Cancel</button>
+        <button class="sheet-save save-blue" onclick="restoreGarageBackup()">Restore</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================
+       INVOICE MODAL
+  ========================== -->
+  <div id="garageInvoiceModal" class="sheet-overlay">
+    <div class="sheet invoice-sheet">
+      <div class="sheet-title" style="color:#fff;">Invoice</div>
+
+      <div id="garageInvoicePrintArea" class="invoice-print-area">
+        <div class="invoice-brand">Sheba Enterprise</div>
+        <div class="invoice-title">Garage Invoice</div>
+
+        <div class="invoice-row"><strong>গাড়ি:</strong> <span id="invoiceCarNumber">-</span></div>
+        <div class="invoice-row"><strong>কাস্টমার:</strong> <span id="invoiceOwnerName">-</span></div>
+        <div class="invoice-row"><strong>সার্ভিস:</strong> <span id="invoiceServiceType">-</span></div>
+        <div class="invoice-row"><strong>তারিখ:</strong> <span id="invoiceDate">-</span></div>
+        <div class="invoice-row"><strong>মোট বিল:</strong> <span id="invoiceAmount">৳0</span></div>
+        <div class="invoice-row"><strong>Paid:</strong> <span id="invoicePaid">৳0</span></div>
+        <div class="invoice-row"><strong>Due:</strong> <span id="invoiceDue">৳0</span></div>
+        <div class="invoice-row"><strong>Due Date:</strong> <span id="invoiceDueDate">-</span></div>
+        <div class="invoice-row"><strong>Details:</strong> <span id="invoiceNote">-</span></div>
+
+        <div class="invoice-thankyou">ধন্যবাদ, আবার আসবেন</div>
+      </div>
+
+      <div class="invoice-whatsapp-actions">
+        <button class="wa-btn" onclick="sendInvoiceWhatsApp()">WhatsApp Invoice</button>
+        <button class="wa-btn due" onclick="sendDueWhatsApp()">Due Reminder</button>
+        <button class="wa-btn" onclick="printInvoice()">Print</button>
+        <button class="wa-btn due" onclick="closeInvoiceModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="addMenu" class="addMenu">
+    <div onclick="openPage('garage.html')">🛠️ Garage</div>
+    <div onclick="openPage('store.html')">🏪 Store</div>
+    <div onclick="openPage('bus.html')">🚌 Bus</div>
+    <div onclick="openPage('truck.html')">🚚 Truck</div>
+    <div onclick="openPage('notes.html')">📝 Notes</div>
+    <div onclick="openPage('hisab.html')">💰 হিসাব</div>
+  </div>
+
+  <div class="bottomNav ultraNav">
+    <div class="bottomItem" onclick="openPage('dashboard.html')">
+      <span>🏠</span>
+      <small>Home</small>
+    </div>
+
+    <div class="bottomItem active" onclick="openPage('garage.html')">
+      <span>🛠️</span>
+      <small>Garage</small>
+    </div>
+
+    <div class="centerBtn" onclick="toggleAddMenu()">➕</div>
+
+    <div class="bottomItem" onclick="openPage('store.html')">
+      <span>🏪</span>
+      <small>Store</small>
+    </div>
+
+    <div class="bottomItem" onclick="openPage('bus.html')">
+      <span>🚌</span>
+      <small>Bus</small>
+    </div>
+  </div>
+
+  <script type="module" src="js/garage.js"></script>
+
+  <script type="module">
+    import { requireLogin } from "./js/supabase-guard.js";
+
+    (async function () {
+      await requireLogin();
+    })();
+  </script>
+
+  <script src="js/bottom-nav.js"></script>
+  <script src="js/theme.js"></script>
+</body>
+</html>
